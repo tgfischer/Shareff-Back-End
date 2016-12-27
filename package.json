@@ -1,0 +1,32 @@
+{
+  "name": "shareff",
+  "version": "0.0.1",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "run": "node server.js",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tgfischer/Shareff-Back-End.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tgfischer/Shareff-Back-End/issues"
+  },
+  "homepage": "https://github.com/tgfischer/Shareff-Back-End#readme",
+  "dependencies": {
+    "babel-core": "^6.21.0",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-register": "^6.18.0",
+    "express": "^4.14.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "eslint": "^3.12.2",
+    "eslint-config-walmart": "^1.1.0",
+    "eslint-plugin-filenames": "^1.1.0"
+  }
+}
