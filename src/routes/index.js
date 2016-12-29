@@ -1,4 +1,5 @@
 import express from 'express';
+import {pool} from '../app';
 const router = express.Router();
 
 router.get('/', (req, res) => {
