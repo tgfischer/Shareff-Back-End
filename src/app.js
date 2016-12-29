@@ -5,8 +5,6 @@ import {config} from '../config/db';
 // Export the app object
 export const app = express();
 
-console.log(config);
-
 // Set up the database with the imported configuration
 export const pool = new pg.Pool(config);
 
