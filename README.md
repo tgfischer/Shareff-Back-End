@@ -1,15 +1,14 @@
 # Shareff-Back-End
 ## Setup
 1. Download and install PostgreSQL 9.6 to your local machine, which will be used for your development environment
-2. Start PostgreSQL database from your command line, and set up your database. You need to
-  1. Make a database
-  2. Make a database user
-  3. Give the user a password
-3. Set the environment variables for your development database, so they match the credentials you input in the previous step. To do this, open up your bash command line, and run `setx <ENV_VAR> <VALUE>` (e.g. `setx PGUSER "postgres"`)
+2. Start PostgreSQL database from your command line, and set up your database
+3. Set the environment variables that are required for the project. To do this, open up your bash command line, and run `setx <ENV_VAR> <VALUE>` (e.g. `setx PGUSER "postgres"`). Note, the first 5 are for the PostgreSQL database, and the last one is for generating a JSON Web Token for the authentication
   1. PGUSER
   2. PGDATABASE
   3. PGPASSWORD
-  4. PGPORT
+  4. PGHOST
+  5. PGPORT
+  6. JWT_SECRET
 
 ## Running the application
 1. There are 3 scripts:
