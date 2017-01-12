@@ -18,7 +18,8 @@ router.post('/', (req, res) => {
 
       let user = result.rows[0];
 
-      if (user) {
+      // Verify that there is an email and password to check
+      if (user && user.email && user.password) {
         // Check to see if the hashed password matches the one in the database
         const hashMatches = bcrypt.compareSync(creds.password, user.password);
 
@@ -29,32 +30,35 @@ router.post('/', (req, res) => {
           delete user.password;
 
           // Generate the token for the user
-          user.token = jwt.sign(creds, process.env.JWT_SECRET);
-
-          // Output the log in credentials for debugging purposes
-          console.log('LOGIN: ' + JSON.stringify(user, null, 2));
+          user.token = jwt.sign(user, process.env.JWT_SECRET);
 
           // Return the user that was fetched from the database
           res.status(200).json({user});
         } else {
           // Wait 3 seconds before returning the error
           setTimeout(() => {
-            res.status(500).json({err: nls.INVALID_LOGIN_CREDENTIALS});
+            res.status(500).json({
+              err: {
+                message: nls.INVALID_LOGIN_CREDENTIALS
+              }
+            });
           }, 3000);
         }
       } else {
         // Wait 3 seconds before returning the error
         setTimeout(() => {
-          res.status(500).json({err: nls.INVALID_LOGIN_CREDENTIALS});
+          res.status(500).json({
+            err: {
+              message: nls.INVALID_LOGIN_CREDENTIALS
+            }
+          });
         }, 3000);
       }
     }).catch(err => {
       client.release();
       console.error('ERROR: ', err.message, err.stack);
 
-      res.status(500).json({
-        err: err
-      });
+      res.status(500).json({err});
     });
   });
 });

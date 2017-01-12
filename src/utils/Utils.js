@@ -7,9 +7,9 @@ import jwt from 'jsonwebtoken';
  *
  * Returns a promise, so you can do:
  *
- *    import Utils from '../utils/Utils';
+ *    import {getPayload} from '../utils/Utils';
  *
- *    Utils.getPayload(token).then(payload => {
+ *    getPayload(token).then(payload => {
  *      // Do something
  *    }).catch(err => {
  *      // Set the status to 401 Unauthorized, and return the error

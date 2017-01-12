@@ -18,15 +18,17 @@ router.post('/', (req, res) => {
     client.query(`SELECT email FROM users WHERE email='${newUser.email}' LIMIT 1`).then(result => {
       let user = result.rows[0];
 
-      console.log(JSON.stringify(user, null, 2));
-
       // Check that the correct user was returned from the database
       if (user) {
         client.release();
 
         // Wait 3 seconds before returning the error
         setTimeout(() => {
-          res.status(500).json({err: nls.USER_ALREADY_EXISTS});
+          res.status(500).json({
+            err: {
+              message: nls.USER_ALREADY_EXISTS
+            }
+          });
         }, 3000);
       } else {
         // Hash the password with a salt, rather than storing plaintext
@@ -43,8 +45,6 @@ router.post('/', (req, res) => {
           // Generate the token for the user
           newUser.token = jwt.sign(newUser, process.env.JWT_SECRET);
 
-          console.log(JSON.stringify(newUser, null, 2));
-
           // Return the user that was fetched from the database
           res.status(200).json({user: newUser});
         });
@@ -53,9 +53,7 @@ router.post('/', (req, res) => {
       client.release();
       console.error('ERROR: ', err.message, err.stack);
 
-      res.status(500).json({
-        err: err
-      });
+      res.status(500).json({err});
     });
   });
 });
