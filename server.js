@@ -2,9 +2,17 @@
 require('babel-register');
 
 const app = require('./src/app').app;
+const nls = require('./src/nls/messages').nls;
 const PORT = process.env.PORT || 4000;
+
 
 // We initialize the server here
 app.listen(PORT, () => {
-    console.log('Server listening on port', PORT);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`\n${nls.PRODUCTION_MODE}`);
+  } else {
+    console.log(`\n${nls.DEVELOPMENT_MODE}`);
+  }
+
+  console.log(nls.SERVER_STARTED, PORT);
 });
