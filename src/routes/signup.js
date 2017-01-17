@@ -6,9 +6,6 @@ import {nls} from '../nls/messages';
 const router = express.Router();
 
 router.post('/', (req, res) => {
-  // Output the log in credentials for debugging purposes
-  console.log(JSON.stringify(req.body, null, 2));
-
   var newUser = {
     email: req.body.email,
     password: req.body.password
