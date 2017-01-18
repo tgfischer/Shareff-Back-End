@@ -2,7 +2,8 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
 import {pool} from '../app';
-import {nls} from '../nls/messages';
+import {nls} from '../i18n/en';
+import {rollBack} from '../utils/Utils';
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.post('/', (req, res) => {
   };
 
   pool.connect().then(client => {
-    client.query(`SELECT email, password FROM users WHERE email='${creds.email}' LIMIT 1`).then(result => {
+    client.query(`SELECT * FROM userTable WHERE email='${creds.email}' LIMIT 1`).then(result => {
       client.release();
 
       let user = result.rows[0];
@@ -31,6 +32,8 @@ router.post('/', (req, res) => {
 
           // Generate the token for the user
           user.token = jwt.sign(user, process.env.JWT_SECRET);
+
+          console.log(`Logging in user:\n${JSON.stringify(user, null, 2)}`);
 
           // Return the user that was fetched from the database
           res.status(200).json({user});
