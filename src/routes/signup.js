@@ -2,58 +2,104 @@ import express from 'express';
 import bcrypt from 'bcrypt-nodejs';
 import jwt from 'jsonwebtoken';
 import {pool} from '../app';
-import {nls} from '../nls/messages';
+import {nls} from '../i18n/en';
+import {rollBack} from '../utils/Utils';
+
 const router = express.Router();
 
 router.post('/', (req, res) => {
-  // Output the log in credentials for debugging purposes
-  console.log(JSON.stringify(req.body, null, 2));
-
-  var newUser = {
-    email: req.body.email,
-    password: req.body.password
-  };
-
+  // Connect to the pool, and reserve a client to make the query
   pool.connect().then(client => {
-    client.query(`SELECT email FROM users WHERE email='${newUser.email}' LIMIT 1`).then(result => {
+    var query = `SELECT "email" \
+                  FROM userTable \
+                  WHERE email='${req.body.email}' \
+                  LIMIT 1`;
+
+    // Check to see if there is a user with that email already registered
+    client.query(query).then(result => {
       let user = result.rows[0];
 
-      // Check that the correct user was returned from the database
+      // If there was a user, rollback
       if (user) {
-        client.release();
-
-        // Wait 3 seconds before returning the error
-        setTimeout(() => {
-          res.status(500).json({
-            err: {
-              message: nls.USER_ALREADY_EXISTS
-            }
-          });
-        }, 3000);
+        rollBack({
+          message: nls.USER_ALREADY_EXISTS
+        }, client, res);
       } else {
-        // Hash the password with a salt, rather than storing plaintext
-        newUser.password = bcrypt.hashSync(newUser.password, bcrypt.genSaltSync(8), null);
+        // Begin the transaction
+        client.query('BEGIN').then(result => {
+          // First, we need to insert the address because the user table needs
+          // the address id
+          const newAddress = {
+            line1: req.body.addressOne,
+            line2: req.body.addressTwo,
+            city: req.body.city,
+            province: req.body.province,
+            postalCode: req.body.postalCode
+          };
 
-        // Insert
-        client.query(`INSERT INTO users (email, password) VALUES ('${newUser.email}', '${newUser.password}')`).then(result => {
-          client.release();
+          // Build the query to insert the address
+          query = `INSERT INTO address ("line1", "line2", "city", "province", "postalCode") \
+                    VALUES ('${newAddress.line1}', '${newAddress.line2}', '${newAddress.city}', '${newAddress.province}', '${newAddress.postalCode}') \
+                    RETURNING "addressId"`;
 
-          // Remove the password field from the user so we don't send it back
-          // to the client
-          delete newUser.password;
+          // Insert the address into the database
+          client.query(query).then(result => {
+            // Get the address id from the new address record
+            const {addressId} = result.rows[0];
 
-          // Generate the token for the user
-          newUser.token = jwt.sign(newUser, process.env.JWT_SECRET);
+            // Now we can build the new user using the returned addressId
+            var newUser = {
+              firstName: req.body.firstName,
+              lastName: req.body.lastName,
+              email: req.body.email,
+              password: req.body.password,
+              addressId
+            };
 
-          // Return the user that was fetched from the database
-          res.status(200).json({user: newUser});
+            // Hash the password with a salt, rather than storing plaintext
+            newUser.password = bcrypt.hashSync(newUser.password, bcrypt.genSaltSync(8), null);
+
+            // Build the query to insert the user
+            query = `INSERT INTO userTable ("firstName", "lastName", "email", "password", "addressId") \
+                      VALUES ('${newUser.firstName}', '${newUser.lastName}', '${newUser.email}', '${newUser.password}', '${newUser.addressId}') \
+                      RETURNING "userId"`;
+
+            // Insert the user into the users table
+            client.query(query).then(result => {
+              // Remove the password field from the user so we don't send it back
+              // to the client
+              delete newUser.password;
+
+              // Add the user id to the object so it gets signed in the token
+              newUser.userId = result.rows[0].userId;
+
+              // Generate the token for the user
+              newUser.token = jwt.sign(newUser, process.env.JWT_SECRET);
+
+              // Insert the user into the users table
+              client.query('COMMIT').then(result => {
+                // Release the client back to the pool
+                client.release();
+
+                console.log(`New user added:\n${JSON.stringify(newUser, null, 2)}`);
+
+                // Return the user that was fetched from the database
+                res.status(200).json({user: newUser});
+              }).catch(err => {
+                rollBack(err, client, res);
+              });
+            }).catch(err => {
+              rollBack(err, client, res);
+            });
+          }).catch(err => {
+            rollBack(err, client, res);
+          });
+        }).catch(err => {
+          rollBack(err, client, res);
         });
       }
     }).catch(err => {
-      client.release();
-      console.error('ERROR: ', err.message, err.stack);
-
-      res.status(500).json({err});
+      rollBack(err, client, res);
     });
   });
 });

@@ -5,6 +5,9 @@ import jwt from 'jsonwebtoken';
  * also be used to verify that the JWT that was supplied by the client is valid,
  * so the user can access restricted routes.
  *
+ * @param token
+ *    The JSON Web Token
+ *
  * Returns a promise, so you can do:
  *
  *    import {getPayload} from '../utils/Utils';
@@ -28,5 +31,35 @@ export const getPayload = (token) => {
 
       return resolve(payload);
     });
+  });
+};
+
+/**
+ * This function is used to rollback any transactions that have occured, due to
+ * an error.
+ *
+ * @param err
+ *    The error that occured. Must have a property called message
+ * @param client
+ *    The client that has been executing the queries
+ */
+export const rollBack = (err, client, res) => {
+  client.query('ROLLBACK', () => {
+    // Release the client back to the pool
+    client.release();
+    console.log(`ERROR: ${err.message}\n\nROLLING BACK TRANSACTION (CHOO CHOO!)\n`);
+
+    // Wait 3 seconds before returning the error
+    setTimeout(() => {
+      // Return the error
+      res.status(500).json({err});
+    }, 3000);
+  }).catch(err => {
+    // Something very wrong has happened if we're here...
+    // Release the client back to the pool
+    client.release();
+
+    // Return the error
+    res.status(500).json({err});
   });
 };
