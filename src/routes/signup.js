@@ -11,7 +11,7 @@ router.post('/', (req, res) => {
   // Connect to the pool, and reserve a client to make the query
   pool.connect().then(client => {
     var query = `SELECT "email" \
-                  FROM "userTable" \
+                  FROM userTable \
                   WHERE email='${req.body.email}' \
                   LIMIT 1`;
 
@@ -60,7 +60,7 @@ router.post('/', (req, res) => {
             newUser.password = bcrypt.hashSync(newUser.password, bcrypt.genSaltSync(8), null);
 
             // Build the query to insert the user
-            query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "addressId") \
+            query = `INSERT INTO userTable ("firstName", "lastName", "email", "password", "addressId") \
                       VALUES ('${newUser.firstName}', '${newUser.lastName}', '${newUser.email}', '${newUser.password}', '${newUser.addressId}') \
                       RETURNING "userId"`;
 
