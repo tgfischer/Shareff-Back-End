@@ -1,19 +1,20 @@
 import express from 'express';
 import {pool} from '../app';
-import {rollBack} from '../utils/Utils';
+import {rollBack, isLoggedIn} from '../utils/Utils';
 import {PERSONAL_INFO_UPDATE_SUCCESS} from '../i18n/en';
 const router = express.Router();
 
 /**
  * Get the the rental listings from the query
  */
-router.post('/personal_info', (req, res) => {
+router.post('/personal_info', isLoggedIn, (req, res) => {
   // Get the updated personal information from the body
   const {
     userId, addressId, firstName, lastName, addressOne, addressTwo, city, province,
     postalCode, email, password
   } = req.body;
 
+  // Connect to the pool, and grab a client
   pool.connect().then(client => {
     // Begin the transaction
     client.query('BEGIN').then(result => {
@@ -38,7 +39,7 @@ router.post('/personal_info', (req, res) => {
           // Finish the transaction
           client.query('COMMIT').then(result => {
             // Return the success message to the client
-            res.status(200).json({message: PERSONAL_INFO_UPDATE_SUCCESS});
+            res.status(200).json({success: true});
           }).catch(err => {
             rollBack(err, client, res);
           });

@@ -3,11 +3,11 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
-import {rollBack} from '../utils/Utils';
+import {rollBack, isLoggedOut} from '../utils/Utils';
 
 const router = express.Router();
 
-router.post('/', (req, res) => {
+router.post('/', isLoggedOut, (req, res) => {
   const creds = {
     email: req.body.email,
     password: req.body.password

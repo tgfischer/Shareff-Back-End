@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import nls from '../i18n/en';
 
 /**
  * This function retrieves the payload from the JWT (user information). It can
@@ -32,6 +33,50 @@ export const getPayload = (token) => {
       return resolve(payload);
     });
   });
+};
+
+/**
+ * This is a middleware function that determines if the user is currently logged
+ * in
+ */
+export const isLoggedIn = (req, res, next) => {
+  const {user, token} = req.body;
+
+  getPayload(token).then(({userId}) => {
+    if (userId === user.userId) {
+      next();
+    } else {
+      res.status(401).json({
+        err: {
+          message: nls.UNAUTHORIZED
+        }
+      });
+    }
+  }).catch(err => {
+    res.status(401).json({
+      err: {
+        message: nls.UNAUTHORIZED
+      }
+    });
+  });
+};
+
+/**
+ * This is a middleware function that determines if the user is currently logged
+ * out
+ */
+export const isLoggedOut = (req, res, next) => {
+  const {user, token} = req.body;
+
+  if (!token && !user) {
+    next();
+  } else {
+    res.status(401).json({
+      err: {
+        message: nls.UNAUTHORIZED
+      }
+    });
+  }
 };
 
 /**

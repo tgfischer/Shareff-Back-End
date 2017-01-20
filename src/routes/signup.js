@@ -3,11 +3,11 @@ import bcrypt from 'bcrypt-nodejs';
 import jwt from 'jsonwebtoken';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
-import {rollBack} from '../utils/Utils';
+import {rollBack, isLoggedOut} from '../utils/Utils';
 
 const router = express.Router();
 
-router.post('/', (req, res) => {
+router.post('/', isLoggedOut, (req, res) => {
   // Connect to the pool, and reserve a client to make the query
   pool.connect().then(client => {
     var query = `SELECT "email" \
