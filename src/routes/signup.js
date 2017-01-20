@@ -12,7 +12,7 @@ router.post('/', (req, res) => {
   pool.connect().then(client => {
     var query = `SELECT "email" \
                   FROM "userTable" \
-                  WHERE email='${req.body.email}' \
+                  WHERE "email"='${req.body.email}' \
                   LIMIT 1`;
 
     // Check to see if there is a user with that email already registered
@@ -38,7 +38,7 @@ router.post('/', (req, res) => {
           };
 
           // Build the query to insert the address
-          query = `INSERT INTO address ("line1", "line2", "city", "province", "postalCode") \
+          query = `INSERT INTO "address" ("line1", "line2", "city", "province", "postalCode") \
                     VALUES ('${newAddress.line1}', '${newAddress.line2}', '${newAddress.city}', '${newAddress.province}', '${newAddress.postalCode}') \
                     RETURNING "addressId"`;
 
@@ -81,7 +81,8 @@ router.post('/', (req, res) => {
                 // Release the client back to the pool
                 client.release();
 
-                console.log(`New user added:\n${JSON.stringify(newUser, null, 2)}`);
+                // Merge the two objects together
+                Object.assign(newUser, newAddress);
 
                 // Return the user that was fetched from the database
                 res.status(200).json({user: newUser});

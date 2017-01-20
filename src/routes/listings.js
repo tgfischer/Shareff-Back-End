@@ -17,7 +17,7 @@ router.post('/', (req, res) => {
 
   pool.connect().then(client => {
     // Query the database. ~* matches the regular expression, case insensitive
-    client.query(`SELECT * FROM listings WHERE title ~* '${q}' OR description ~* '${q}'`).then(result => {
+    client.query(`SELECT * FROM "listings" WHERE "title" ~* '${q}' OR description ~* '${q}'`).then(result => {
       client.release();
 
       // Mock the results for now

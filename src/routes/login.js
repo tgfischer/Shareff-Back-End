@@ -14,7 +14,12 @@ router.post('/', (req, res) => {
   };
 
   pool.connect().then(client => {
-    client.query(`SELECT * FROM userTable WHERE email='${creds.email}' LIMIT 1`).then(result => {
+    const query = `SELECT * \
+                    FROM "userTable", "address" \
+                    WHERE "email"='${creds.email}' \
+                    LIMIT 1`;
+
+    client.query(query).then(result => {
       client.release();
 
       let user = result.rows[0];
@@ -32,8 +37,6 @@ router.post('/', (req, res) => {
 
           // Generate the token for the user
           user.token = jwt.sign(user, process.env.JWT_SECRET);
-
-          console.log(`Logging in user:\n${JSON.stringify(user, null, 2)}`);
 
           // Return the user that was fetched from the database
           res.status(200).json({user});
