@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import nls from '../i18n/en';
+import {nls} from '../i18n/en';
 
 /**
  * This function retrieves the payload from the JWT (user information). It can
@@ -40,12 +40,16 @@ export const getPayload = (token) => {
  * in
  */
 export const isLoggedIn = (req, res, next) => {
-  const {user, token} = req.body;
+  const {userId, token} = req.body;
 
-  getPayload(token).then(({userId}) => {
-    if (userId === user.userId) {
+  // Get the userId from the token
+  getPayload(token).then(payload => {
+    // Make sure that the userIds match
+    if (userId === payload) {
       next();
     } else {
+      // If they don't, then the user is a flithy phony. Don't let them continue
+      // with the request
       res.status(401).json({
         err: {
           message: nls.UNAUTHORIZED
@@ -53,9 +57,11 @@ export const isLoggedIn = (req, res, next) => {
       });
     }
   }).catch(err => {
-    res.status(401).json({
+    // If something went wrong while verifying the token, then throw an error,
+    // and don't let them continue with the request
+    res.status(500).json({
       err: {
-        message: nls.UNAUTHORIZED
+        message: nls.GENERIC_ERROR_MESSAGE
       }
     });
   });
@@ -68,6 +74,8 @@ export const isLoggedIn = (req, res, next) => {
 export const isLoggedOut = (req, res, next) => {
   const {user, token} = req.body;
 
+  // If the user sends a user object or a token, don't let them continue with
+  // the request
   if (!token && !user) {
     next();
   } else {

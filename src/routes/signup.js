@@ -27,54 +27,53 @@ router.post('/', isLoggedOut, (req, res) => {
       } else {
         // Begin the transaction
         client.query('BEGIN').then(result => {
-          // First, we need to insert the address because the user table needs
-          // the address id
-          const newAddress = {
-            line1: req.body.addressOne,
-            line2: req.body.addressTwo,
-            city: req.body.city,
-            province: req.body.province,
-            postalCode: req.body.postalCode
+          // Now we can build the new user using the returned addressId
+          var newUser = {
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
+            password: req.body.password
           };
 
-          // Build the query to insert the address
-          query = `INSERT INTO "address" ("line1", "line2", "city", "province", "postalCode") \
-                    VALUES ('${newAddress.line1}', '${newAddress.line2}', '${newAddress.city}', '${newAddress.province}', '${newAddress.postalCode}') \
-                    RETURNING "addressId"`;
+          // Hash the password with a salt, rather than storing plaintext
+          newUser.password = bcrypt.hashSync(newUser.password, bcrypt.genSaltSync(8), null);
 
-          // Insert the address into the database
+          // Build the query to insert the user
+          query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password") \
+                    VALUES ('${newUser.firstName}', '${newUser.lastName}', '${newUser.email}', '${newUser.password}') \
+                    RETURNING "userId"`;
+
+          // Insert the user into the users table
           client.query(query).then(result => {
-            // Get the address id from the new address record
-            const {addressId} = result.rows[0];
+            // Get the userId for the new user
+            const {userId} = result.rows[0];
 
-            // Now we can build the new user using the returned addressId
-            var newUser = {
-              firstName: req.body.firstName,
-              lastName: req.body.lastName,
-              email: req.body.email,
-              password: req.body.password,
-              addressId
+            // First, we need to insert the address because the user table needs
+            // the address id
+            const newAddress = {
+              line1: req.body.addressOne,
+              line2: req.body.addressTwo,
+              city: req.body.city,
+              province: req.body.province,
+              postalCode: req.body.postalCode
             };
 
-            // Hash the password with a salt, rather than storing plaintext
-            newUser.password = bcrypt.hashSync(newUser.password, bcrypt.genSaltSync(8), null);
+            // Build the query to insert the address
+            query = `INSERT INTO "address" ("line1", "line2", "city", "province", "postalCode", "userId") \
+                      VALUES ('${newAddress.line1}', '${newAddress.line2}', '${newAddress.city}', '${newAddress.province}', '${newAddress.postalCode}', '${userId}') \
+                      RETURNING "addressId"`;
 
-            // Build the query to insert the user
-            query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "addressId") \
-                      VALUES ('${newUser.firstName}', '${newUser.lastName}', '${newUser.email}', '${newUser.password}', '${newUser.addressId}') \
-                      RETURNING "userId"`;
-
-            // Insert the user into the users table
+            // Insert the address into the database
             client.query(query).then(result => {
               // Remove the password field from the user so we don't send it back
               // to the client
               delete newUser.password;
 
-              // Add the user id to the object so it gets signed in the token
-              newUser.userId = result.rows[0].userId;
+              // Add the user id to the object
+              newUser.userId = userId;
 
-              // Generate the token for the user
-              newUser.token = jwt.sign(newUser, process.env.JWT_SECRET);
+              // Generate the token from the userId
+              newUser.token = jwt.sign(userId, process.env.JWT_SECRET);
 
               // Insert the user into the users table
               client.query('COMMIT').then(result => {

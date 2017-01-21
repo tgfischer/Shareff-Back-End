@@ -20,8 +20,6 @@ router.post('/', isLoggedOut, (req, res) => {
                     LIMIT 1`;
 
     client.query(query).then(result => {
-      client.release();
-
       let user = result.rows[0];
 
       // Verify that there is an email and password to check
@@ -35,8 +33,8 @@ router.post('/', isLoggedOut, (req, res) => {
           // client
           delete user.password;
 
-          // Generate the token for the user
-          user.token = jwt.sign(user, process.env.JWT_SECRET);
+          // Generate the token for the user from the userId
+          user.token = jwt.sign(user.userId, process.env.JWT_SECRET);
 
           // Return the user that was fetched from the database
           res.status(200).json({user});
@@ -60,8 +58,11 @@ router.post('/', isLoggedOut, (req, res) => {
           });
         }, 3000);
       }
+
+      client.release();
     }).catch(err => {
       client.release();
+      console.log(err);
       console.error('ERROR: ', err.message, err.stack);
 
       res.status(500).json({err});

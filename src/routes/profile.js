@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcrypt-nodejs';
 import {pool} from '../app';
 import {rollBack, isLoggedIn} from '../utils/Utils';
 import {PERSONAL_INFO_UPDATE_SUCCESS} from '../i18n/en';
@@ -23,7 +24,9 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
 
       // Only update the password if the user entered in in the form
       if (password) {
-        query += `, "password"='${password}'`;
+        // Hash the password first
+        const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
+        query += `, "password"='${hash}'`;
       }
 
       query += ` WHERE "userId"='${userId}'`;
@@ -31,7 +34,7 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
       // Update the user's personal information
       client.query(query).then(result => {
         query = `UPDATE "address" \
-                  SET "addressOne"='${addressOne}', "addressTwo"='${addressTwo}', "city"='${city}', "province"='${province}', "postalCode"='${postalCode}' \
+                  SET "line1"='${addressOne}', "line2"='${addressTwo}', "city"='${city}', "province"='${province}', "postalCode"='${postalCode}' \
                   WHERE "addressId"='${addressId}'`;
 
         // Update the user's address
