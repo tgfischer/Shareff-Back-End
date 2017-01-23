@@ -16,8 +16,6 @@ router.post('/get_user', (req, res) => {
                     WHERE "userTable"."userId"='${userId}' \
                     LIMIT 1`;
 
-      console.log(query);
-
       // Get the user information from the database
       client.query(query).then(result => {
         // Send the user information back to the client

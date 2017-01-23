@@ -58,4 +58,31 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
   });
 });
 
+router.post('/upload_item', isLoggedIn, (req, res) => {
+  // Get the item details from the request
+  const {
+    title, category, description, price, addressId, terms, userId
+  } = req.body;
+
+  // Connect to the pool, and grab a client
+  pool.connect().then(client => {
+    client.query('BEGIN').then(result => {
+      const query = `INSERT INTO "rentalItem" (title, category, description, price, "addressId", "termsOfUse", "ownerId") VALUES ('${title}', ARRAY['{"name":"dvd", "age":22}']::json[], \
+      '${description}', '${price}', '${addressId}', '${terms}', '${userId}')`;
+
+      client.query(query).then(result => {
+        client.query('COMMIT').then(result => {
+          res.status(200).json({success: true});
+        }).catch(err => {
+          rollBack(err, client, res);
+        });
+      }).catch(err => {
+        rollBack(err, client, res);
+      });
+    }).catch(err => {
+      rollBack(err, client, res);
+    });
+  });
+});
+
 export {router as profile}
