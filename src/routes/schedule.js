@@ -91,7 +91,11 @@ router.post('/is_available', (req, res) => {
  */
 router.post('/book', (req, res) => {
     if (!req.body.itemId || !req.body.rentRequestId || !req.body.userId || !req.body.startDate || !req.body.endDate) {
-        res.status(500).json({ error: nls.INVALID_PARAMETER_SET });
+        res.status(500).json({ 
+            err: {
+                message: nls.INVALID_PARAMETER_SET 
+            }
+        });
     } else {
         // TODO: potentially check if the rent request (from rentRequestId) is in status "accepted"
         pool.connect().then(client => {            
@@ -161,7 +165,11 @@ router.delete('/book', (req, res) => {
 // TODO: Switch this to a GET?
 router.post('/available_items', (req, res) => {
     if (!req.body.startDate || !req.body.endDate) {
-        res.status(500).json({ error: nls.INVALID_PARAMETER_SET });
+        res.status(500).json({ 
+            err: {
+                message: nls.INVALID_PARAMETER_SET
+            } 
+        });
     } else {
         pool.connect().then(client => {
             client.query('SELECT * FROM public."booking";').then(result => {
