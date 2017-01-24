@@ -1,3 +1,5 @@
+// TODO: Move these messages to the client-side, and return the key
+// e.g. GENERAL_ERROR_MESSAGE: 'error.general'
 export const nls = {
   SERVER_STARTED: 'Server listening on port',
   PRODUCTION_MODE: '>>> Production Mode',
@@ -11,5 +13,6 @@ export const nls = {
   END_BEFORE_START_DATE: 'The propose start date must come before the proposed end date.',
 
   /* Miscellaneous Message */
-  MOMENT_DATE_FORMAT: 'YYYY-MM-DD'
+  MOMENT_DATE_FORMAT: 'YYYY-MM-DD',
+  UNAUTHORIZED: 'You are anauthorized to perform this action'
 };

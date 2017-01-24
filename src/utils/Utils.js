@@ -1,9 +1,13 @@
 import jwt from 'jsonwebtoken';
+import {nls} from '../i18n/en';
 
 /**
  * This function retrieves the payload from the JWT (user information). It can
  * also be used to verify that the JWT that was supplied by the client is valid,
  * so the user can access restricted routes.
+ *
+ * @param token
+ *    The JSON Web Token
  *
  * Returns a promise, so you can do:
  *
@@ -28,5 +32,87 @@ export const getPayload = (token) => {
 
       return resolve(payload);
     });
+  });
+};
+
+/**
+ * This is a middleware function that determines if the user is currently logged
+ * in
+ */
+export const isLoggedIn = (req, res, next) => {
+  const {userId, token} = req.body;
+
+  // Get the userId from the token
+  getPayload(token).then(payload => {
+    // Make sure that the userIds match
+    if (userId === payload) {
+      next();
+    } else {
+      // If they don't, then the user is a flithy phony. Don't let them continue
+      // with the request
+      res.status(401).json({
+        err: {
+          message: nls.UNAUTHORIZED
+        }
+      });
+    }
+  }).catch(err => {
+    // If something went wrong while verifying the token, then throw an error,
+    // and don't let them continue with the request
+    res.status(500).json({
+      err: {
+        message: nls.GENERIC_ERROR_MESSAGE
+      }
+    });
+  });
+};
+
+/**
+ * This is a middleware function that determines if the user is currently logged
+ * out
+ */
+export const isLoggedOut = (req, res, next) => {
+  const {user, token} = req.body;
+
+  // If the user sends a user object or a token, don't let them continue with
+  // the request
+  if (!token && !user) {
+    next();
+  } else {
+    res.status(401).json({
+      err: {
+        message: nls.UNAUTHORIZED
+      }
+    });
+  }
+};
+
+/**
+ * This function is used to rollback any transactions that have occured, due to
+ * an error.
+ *
+ * @param err
+ *    The error that occured. Must have a property called message
+ * @param client
+ *    The client that has been executing the queries
+ */
+export const rollBack = (err, client, res) => {
+  client.query('ROLLBACK', () => {
+    // Release the client back to the pool
+    client.release();
+    console.log(`ERROR: ${err.message}\n\nROLLING BACK TRANSACTION (CHOO CHOO!)\n`);
+
+    // Wait 3 seconds before returning the error
+    setTimeout(() => {
+      // Return the error
+      res.status(500).json({err});
+    }, 3000);
+  }).catch(err => {
+    // Something very wrong has happened if we're here...
+    // Release the client back to the pool
+    client.release();
+
+    // Return the error
+    res.status(500).json({err});
   });
 };

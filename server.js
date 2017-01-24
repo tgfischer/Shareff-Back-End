@@ -2,7 +2,7 @@
 require('babel-register');
 
 const app = require('./src/app').app;
-const nls = require('./src/nls/messages').nls;
+const nls = require('./src/i18n/en').nls;
 const PORT = process.env.PORT || 4000;
 
 
