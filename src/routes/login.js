@@ -2,20 +2,24 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt-nodejs';
 import {pool} from '../app';
-import {nls} from '../nls/messages';
+import {nls} from '../i18n/en';
+import {rollBack, isLoggedOut} from '../utils/Utils';
 
 const router = express.Router();
 
-router.post('/', (req, res) => {
+router.post('/', isLoggedOut, (req, res) => {
   const creds = {
     email: req.body.email,
     password: req.body.password
   };
 
   pool.connect().then(client => {
-    client.query(`SELECT email, password FROM users WHERE email='${creds.email}' LIMIT 1`).then(result => {
-      client.release();
+    const query = `SELECT * \
+                    FROM "userTable", "address" \
+                    WHERE "email"='${creds.email}' \
+                    LIMIT 1`;
 
+    client.query(query).then(result => {
       let user = result.rows[0];
 
       // Verify that there is an email and password to check
@@ -29,8 +33,8 @@ router.post('/', (req, res) => {
           // client
           delete user.password;
 
-          // Generate the token for the user
-          user.token = jwt.sign(user, process.env.JWT_SECRET);
+          // Generate the token for the user from the userId
+          user.token = jwt.sign(user.userId, process.env.JWT_SECRET);
 
           // Return the user that was fetched from the database
           res.status(200).json({user});
@@ -54,8 +58,11 @@ router.post('/', (req, res) => {
           });
         }, 3000);
       }
+
+      client.release();
     }).catch(err => {
       client.release();
+      console.log(err);
       console.error('ERROR: ', err.message, err.stack);
 
       res.status(500).json({err});
