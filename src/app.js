@@ -1,16 +1,20 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import pg from 'pg';
+import path from 'path';
 import {config} from '../config/db';
 
 // Export the app object
 export const app = express();
 
 // parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended: false }));
 
 // parse application/json
-app.use(bodyParser.json())
+app.use(bodyParser.json());
+
+// Allow the assets folder to be accessible from the client-side
+app.use(express.static('assets'));
 
 // Enable CORS since client and server are running on different ports
 app.use((req, res, next) => {

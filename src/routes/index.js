@@ -16,12 +16,19 @@ router.post('/get_user', (req, res) => {
                     WHERE "userTable"."userId"='${userId}' \
                     LIMIT 1`;
 
-      console.log(query);
-
       // Get the user information from the database
       client.query(query).then(result => {
+        // Release the client
+        client.release();
+
         // Send the user information back to the client
         return res.status(200).json({user: result.rows[0]});
+      }).catch(err => {
+        // Release the client
+        client.release();
+
+        // Return the error message
+        return res.status(500).json({err});
       });
     });
   }).catch(err => {

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import lwip from 'lwip';
 import {nls} from '../i18n/en';
 
 /**
@@ -116,3 +117,48 @@ export const rollBack = (err, client, res) => {
     res.status(500).json({err});
   });
 };
+
+/**
+ * Processes uploaded images, and resizes them to the desired size
+ *
+ * @param args
+ *    Valid arguments:
+ *      1. path   - The path to the uploaded images
+ *      2. width  - The desired width of the image. Height auto scales
+ *      3. height - The desired height of the image. Width auto scales
+ * @param next
+ *    The callback for the function, so it can be used with async in batch
+ *    uploads
+ */
+export const processImage = ({path, width, height}, next) => {
+  // Open the photo so it can be resized
+  lwip.open(path, (err, image) => {
+    if (err) {
+      return next(err);
+    }
+
+    // Default is to not scale the image
+    let ratio = 1;
+
+    if (width) {
+      ratio = width / image.width();
+    } else if (height) {
+      ratio = height / image.height();
+    }
+
+    // Prevent upscaling if the image is too small
+    ratio = ratio > 1 ? 1 : ratio;
+
+    // Scale the image, and save it
+    image.batch().scale(ratio).writeFile(path, (err) => {
+      return next(err);
+    });
+  });
+};
+
+export const getValidImageMimeTypes = () => ([
+  'image/jpeg',
+  'image/png',
+  'image/bmp',
+  'image/gif'
+]);
