@@ -31,6 +31,8 @@ pool.on('error', (e, client) => {
 import {index} from './routes/index';
 import {login} from './routes/login';
 import {signup} from './routes/signup';
+import {schedule} from './routes/schedule';
 app.use('/', index);
 app.use('/login', login);
 app.use('/signup', signup);
+app.use('/schedule', schedule);
