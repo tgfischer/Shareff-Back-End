@@ -67,11 +67,13 @@ router.post('/upload_item', isLoggedIn, (req, res) => {
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
     client.query('BEGIN').then(result => {
-      const query = `INSERT INTO "rentalItem" (title, category, description, price, "addressId", "termsOfUse", "ownerId") VALUES ('${title}', ARRAY['{"name":"dvd", "age":22}']::json[], \
-      '${description}', '${price}', '${addressId}', '${terms}', '${userId}')`;
 
-      client.query(query).then(result => {
+      const query = `INSERT INTO "rentalItem" (title, category, description, price, "addressId", "termsOfUse", "ownerId") VALUES ($1, $2, $3, $4, $5, $6, $7)`;
+
+
+      client.query(query, [title, category, description, price, addressId, terms, userId]).then(result => {
         client.query('COMMIT').then(result => {
+          client.release();
           res.status(200).json({success: true});
         }).catch(err => {
           rollBack(err, client, res);
