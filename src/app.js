@@ -54,6 +54,7 @@ import {personalInfo} from './routes/profile/personalInfo';
 import {uploadItem} from './routes/profile/uploadItem';
 import {messages} from './routes/profile/messages'
 import {schedule} from './routes/schedule';
+import {tracking} from './routes/tracking';
 app.use('/', index);
 app.use('/login', login);
 app.use('/signup', signup);
@@ -63,3 +64,4 @@ profile.use('/personal_info', personalInfo);
 profile.use('/upload_item', uploadItem);
 profile.use('/messages', messages);
 app.use('/schedule', schedule);
+app.use('/tracking', tracking);
