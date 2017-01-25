@@ -27,7 +27,7 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
   // Get the updated personal information from the body
   const {
     userId, token, addressId, firstName, lastName, addressOne, addressTwo, city, province,
-    postalCode, email, password
+    postalCode, email, password, description
   } = req.body;
 
   // Connect to the pool, and grab a client
@@ -35,7 +35,7 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
     // Begin the transaction
     client.query('BEGIN').then(result => {
       let query = `UPDATE "userTable" \
-                    SET "firstName"='${firstName}', "lastName"='${lastName}', "email"='${email}'`;
+                    SET "firstName"='${firstName}', "lastName"='${lastName}', "email"='${email}', "description"='${description}'`;
 
       // Only update the password if the user entered in in the form
       if (password) {
