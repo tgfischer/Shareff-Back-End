@@ -8,15 +8,12 @@ import {rollBack, isLoggedOut} from '../utils/Utils';
 const router = express.Router();
 
 router.post('/', isLoggedOut, (req, res) => {
-  const creds = {
-    email: req.body.email,
-    password: req.body.password
-  };
+  const {email, password} = req.body;
 
   pool.connect().then(client => {
     const query = `SELECT * \
                     FROM "userTable", "address" \
-                    WHERE "email"='${creds.email}' \
+                    WHERE "email"='${email}' \
                     LIMIT 1`;
 
     client.query(query).then(result => {
@@ -25,10 +22,10 @@ router.post('/', isLoggedOut, (req, res) => {
       // Verify that there is an email and password to check
       if (user && user.email && user.password) {
         // Check to see if the hashed password matches the one in the database
-        const hashMatches = bcrypt.compareSync(creds.password, user.password);
+        const hashMatches = bcrypt.compareSync(password, user.password);
 
         // Check that the correct user was returned from the database
-        if (hashMatches && user.email === creds.email) {
+        if (hashMatches && user.email === email) {
           // Delete the password field, since we don't want to return that to the
           // client
           delete user.password;
@@ -62,7 +59,6 @@ router.post('/', isLoggedOut, (req, res) => {
       client.release();
     }).catch(err => {
       client.release();
-      console.log(err);
       console.error('ERROR: ', err.message, err.stack);
 
       res.status(500).json({err});

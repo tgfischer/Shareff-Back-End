@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import lwip from 'lwip';
 import {nls} from '../i18n/en';
 
 /**
@@ -114,5 +115,94 @@ export const rollBack = (err, client, res) => {
 
     // Return the error
     res.status(500).json({err});
+  });
+};
+
+/**
+ * Processes uploaded images, and resizes them to the desired size
+ *
+ * @param args
+ *    Valid arguments:
+ *      1. path   - The path to the uploaded images
+ *      2. width  - The desired width of the image. Height auto scales
+ *      3. height - The desired height of the image. Width auto scales
+ * @param next
+ *    The callback for the function, so it can be used with async in batch
+ *    uploads
+ */
+export const processImage = ({path, width, height}, next) => {
+  // Open the photo so it can be resized
+  lwip.open(path, (err, image) => {
+    if (err) {
+      return next(err);
+    }
+
+    // Default is to not scale the image
+    let ratio = 1;
+
+    if (width) {
+      ratio = width / image.width();
+    } else if (height) {
+      ratio = height / image.height();
+    }
+
+    // Prevent upscaling if the image is too small
+    ratio = ratio > 1 ? 1 : ratio;
+
+    // Scale the image, and save it
+    image.batch().scale(ratio).writeFile(path, (err) => {
+      return next(err);
+    });
+  });
+};
+
+/**
+ * Get a list of valid photo mimetypes. It's used to validate that the files
+ * uploaded are actually photos, and not malicious
+ */
+export const getValidImageMimeTypes = () => ([
+  'image/jpeg',
+  'image/png',
+  'image/bmp',
+  'image/gif'
+]);
+
+/**
+ * Get the user from the database. This function releases the client after the
+ * query
+ *
+ * @param client
+ *    The client that will be used to query the database
+ * @param userId
+ *    The userId of the desired user
+ * @param token
+ *    The user's authentication token
+ */
+export const getUser = (client, userId, token) => {
+  // Make a new promise
+  return new Promise((resolve, reject) => {
+    // Get the user information from the database
+    client.query(`SELECT * FROM "userTable", "address" WHERE "userTable"."userId"=$1 LIMIT 1`, [userId]).then(result => {
+      // Release the client
+      client.release();
+
+      // Get the user
+      const user = result.rows[0];
+
+      // Delete the password
+      delete user.password;
+
+      // Set the token
+      user.token = token;
+
+      // Reolve the promise with the user
+      resolve(user);
+    }).catch(err => {
+      // Release the client
+      client.release();
+
+      // Reject the promise with the error
+      reject(err);
+    });
   });
 };

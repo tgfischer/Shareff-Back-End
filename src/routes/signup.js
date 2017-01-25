@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt-nodejs';
 import jwt from 'jsonwebtoken';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
-import {rollBack, isLoggedOut} from '../utils/Utils';
+import {rollBack, isLoggedOut, getUser} from '../utils/Utils';
 
 const router = express.Router();
 
@@ -41,12 +41,12 @@ router.post('/', isLoggedOut, (req, res) => {
           // Build the query to insert the user
           query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password") \
                     VALUES ('${newUser.firstName}', '${newUser.lastName}', '${newUser.email}', '${newUser.password}') \
-                    RETURNING "userId"`;
+                    RETURNING "userId", "photoUrl"`;
 
           // Insert the user into the users table
           client.query(query).then(result => {
             // Get the userId for the new user
-            const {userId} = result.rows[0];
+            const {userId, photoUrl} = result.rows[0];
 
             // First, we need to insert the address because the user table needs
             // the address id
@@ -65,26 +65,17 @@ router.post('/', isLoggedOut, (req, res) => {
 
             // Insert the address into the database
             client.query(query).then(result => {
-              // Remove the password field from the user so we don't send it back
-              // to the client
-              delete newUser.password;
-
-              // Add the user id to the object
-              newUser.userId = userId;
-
-              // Generate the token from the userId
-              newUser.token = jwt.sign(userId, process.env.JWT_SECRET);
-
               // Insert the user into the users table
               client.query('COMMIT').then(result => {
-                // Release the client back to the pool
-                client.release();
+                // Generate the token from the userId
+                const token = jwt.sign(userId, process.env.JWT_SECRET);
 
-                // Merge the two objects together
-                Object.assign(newUser, newAddress);
-
-                // Return the user that was fetched from the database
-                res.status(200).json({user: newUser});
+                // Fetch the new user from the database
+                getUser(client, userId, token).then(user => {
+                  res.status(200).json({user});
+                }).catch(err => {
+                  res.status(500).json({err});
+                });
               }).catch(err => {
                 rollBack(err, client, res);
               });

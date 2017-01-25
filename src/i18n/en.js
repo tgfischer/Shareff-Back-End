@@ -9,10 +9,11 @@ export const nls = {
   GENERIC_ERROR_MESSAGE: 'Something has gone wrong while processing your request. Please try again later.',
   INVALID_LOGIN_CREDENTIALS: 'Oops! Either the email or password that was provided is incorrect.',
   USER_ALREADY_EXISTS: 'Oops! There is already an account that uses that email address.',
+  UNAUTHORIZED: 'You are anauthorized to perform this action',
+  INVALID_IMAGE_TYPE: 'The image that you tried to upload is invalid',
   INVALID_PARAMETER_SET: 'Invalid parameter set. Please edit the request to contain the proper parameters.',
   END_BEFORE_START_DATE: 'The propose start date must come before the proposed end date.',
 
   /* Miscellaneous Message */
-  MOMENT_DATE_FORMAT: 'YYYY-MM-DD',
-  UNAUTHORIZED: 'You are anauthorized to perform this action'
+  MOMENT_DATE_FORMAT: 'YYYY-MM-DD'
 };
