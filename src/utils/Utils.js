@@ -156,9 +156,53 @@ export const processImage = ({path, width, height}, next) => {
   });
 };
 
+/**
+ * Get a list of valid photo mimetypes. It's used to validate that the files
+ * uploaded are actually photos, and not malicious
+ */
 export const getValidImageMimeTypes = () => ([
   'image/jpeg',
   'image/png',
   'image/bmp',
   'image/gif'
 ]);
+
+/**
+ * Get the user from the database. This function releases the client after the
+ * query
+ *
+ * @param client
+ *    The client that will be used to query the database
+ * @param userId
+ *    The userId of the desired user
+ * @param token
+ *    The user's authentication token
+ */
+export const getUser = (client, userId, token) => {
+  // Make a new promise
+  return new Promise((resolve, reject) => {
+    // Get the user information from the database
+    client.query(`SELECT * FROM "userTable", "address" WHERE "userTable"."userId"=$1 LIMIT 1`, [userId]).then(result => {
+      // Release the client
+      client.release();
+
+      // Get the user
+      const user = result.rows[0];
+
+      // Delete the password
+      delete user.password;
+
+      // Set the token
+      user.token = token;
+
+      // Reolve the promise with the user
+      resolve(user);
+    }).catch(err => {
+      // Release the client
+      client.release();
+
+      // Reject the promise with the error
+      reject(err);
+    });
+  });
+};

@@ -5,7 +5,7 @@ import uuid from 'node-uuid';
 import path from 'path';
 import {pool} from '../app';
 import {
-  rollBack, isLoggedIn, processImage, getValidImageMimeTypes
+  rollBack, isLoggedIn, processImage, getValidImageMimeTypes, getUser
 } from '../utils/Utils';
 import {nls} from '../i18n/en';
 
@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 router.post('/personal_info', isLoggedIn, (req, res) => {
   // Get the updated personal information from the body
   const {
-    userId, addressId, firstName, lastName, addressOne, addressTwo, city, province,
+    userId, token, addressId, firstName, lastName, addressOne, addressTwo, city, province,
     postalCode, email, password
   } = req.body;
 
@@ -56,8 +56,12 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
         client.query(query).then(result => {
           // Finish the transaction
           client.query('COMMIT').then(result => {
-            // Return the success message to the client
-            res.status(200).json({success: true});
+            // Get the user. The client gets released
+            getUser(client, userId, token).then(user => {
+              res.status(200).json({user});
+            }).catch(err => {
+              res.status(500).json({err});
+            });
           }).catch(err => {
             rollBack(err, client, res);
           });
@@ -108,21 +112,13 @@ router.post('/upload_profile_photo', multer({storage}).array('files'), isLoggedI
     pool.connect().then(client => {
       // Update the user's personal information
       client.query(`UPDATE "userTable" SET "photoUrl"=$1`, [photoUrl]).then(result => {
-        const {userId} = req.body;
+        const {userId, token} = req.body;
 
-        // Get the user information from the database
-        client.query(`SELECT * FROM "userTable", "address" WHERE "userTable"."userId"=$1 LIMIT 1`, [userId]).then(result => {
-          // Release the client
-          client.release();
-
-          // Send the user information back to the client
-          return res.status(200).json({user: result.rows[0]});
+        // Get the user. The client gets released
+        getUser(client, userId, token).then(user => {
+          res.status(200).json({user});
         }).catch(err => {
-          // Release the client
-          client.release();
-
-          // Return the error message
-          return res.status(500).json({err});
+          res.status(500).json({err});
         });
       }).catch(err => {
         // Release the client back to the pool
