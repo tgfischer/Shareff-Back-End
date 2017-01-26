@@ -133,10 +133,10 @@ router.post('/upload_profile_photo', multer({storage}).array('files'), isLoggedI
 
     // Connect to the pool, and grab a client
     pool.connect().then(client => {
-      // Update the user's personal information
-      client.query(`UPDATE "userTable" SET "photoUrl"=$1`, [photoUrl]).then(result => {
-        const {userId, token} = req.body;
+      const {userId, token} = req.body;
 
+      // Update the user's personal information
+      client.query(`UPDATE "userTable" SET "photoUrl"=$1 WHERE "userId"=$2`, [photoUrl, userId]).then(result => {
         // Get the user. The client gets released
         getUser(client, userId, token).then(user => {
           res.status(200).json({user});

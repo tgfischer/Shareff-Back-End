@@ -70,6 +70,8 @@ router.post('/', isLoggedOut, (req, res) => {
                 // Generate the token from the userId
                 const token = jwt.sign(userId, process.env.JWT_SECRET);
 
+                console.log(userId);
+
                 // Fetch the new user from the database
                 getUser(client, userId, token).then(user => {
                   res.status(200).json({user});

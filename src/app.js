@@ -2,6 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import pg from 'pg';
 import path from 'path';
+import validator from 'validator';
 import {config} from '../config/db';
 
 // Export the app object
@@ -20,6 +21,17 @@ app.use(express.static('assets'));
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+
+// Escape all of the properties in the body
+app.use((req, res, next) => {
+  for (let key in req.body) {
+    if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+      req.body[key] = validator.escape(req.body[key]);
+    }
+  }
+
   next();
 });
 
