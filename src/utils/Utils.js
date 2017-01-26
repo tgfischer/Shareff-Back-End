@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import lwip from 'lwip';
+import validator from 'validator';
 import {nls} from '../i18n/en';
 
 /**
@@ -45,6 +46,8 @@ export const isLoggedIn = (req, res, next) => {
 
   // Get the userId from the token
   getPayload(token).then(payload => {
+    console.log(userId);
+    console.log(payload);
     // Make sure that the userIds match
     if (userId === payload) {
       next();
@@ -182,7 +185,7 @@ export const getUser = (client, userId, token) => {
   // Make a new promise
   return new Promise((resolve, reject) => {
     // Get the user information from the database
-    client.query(`SELECT * FROM "userTable", "address" WHERE "userTable"."userId"=$1 LIMIT 1`, [userId]).then(result => {
+    client.query(`SELECT * FROM "userTable" INNER JOIN "address" ON "userTable"."userId"="address"."userId" WHERE "userTable"."userId"=$1 LIMIT 1`, [userId]).then(result => {
       // Release the client
       client.release();
 

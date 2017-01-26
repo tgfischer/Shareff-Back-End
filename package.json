@@ -34,7 +34,8 @@
     "node-uuid": "^1.4.7",
     "path": "^0.12.7",
     "pg": "^6.1.2",
-    "util": "^0.10.3"
+    "util": "^0.10.3",
+    "validator": "^6.2.1"
   },
   "devDependencies": {
     "babel-eslint": "^7.1.1",
