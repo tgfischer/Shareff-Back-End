@@ -93,6 +93,9 @@ router.post('/upload_item', isLoggedIn, (req, res) => {
     client.query(query, [title, category, description, price, addressId, terms, userId]).then(result => {
       client.release();
       res.status(200).json({success: true});
+    }).catch(err => {
+      client.release();
+      res.status(500).json({err});
     });
   });
 });
