@@ -20,9 +20,31 @@ router.post('/get_user', (req, res) => {
         console.log(JSON.stringify(err, null, 2));
         res.status(500).json({err});
       });
-    });
+    }).catch(err => {
+      res.status(500).json({err});
+    });;
   }).catch(err => {
     return res.status(401).json({err});
+  });
+});
+
+/**
+ * Get basic information about a user (e.g. non-sensitive information)
+ */
+router.post('/get_basic_user', (req, res) => {
+  const {userId} = req.body;
+
+  // Connect to the pool, and reserve a client to make the query
+  pool.connect().then(client => {
+    client.query('SELECT "userId", "firstName", "lastName", "email", "photoUrl" FROM "userTable" WHERE "userId"=$1', [userId]).then(result => {
+      // Get the user and send the request
+      const user = result.rows[0];
+      res.status(200).json({user});
+    }).catch(err => {
+      res.status(500).json({err});
+    });
+  }).catch(err => {
+    res.status(500).json({err});
   });
 });
 

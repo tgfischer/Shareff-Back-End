@@ -40,6 +40,7 @@ export const pool = new pg.Pool(config);
 
 // If an error is thrown while working with the database, log the error
 pool.on('error', (e, client) => {
+  client.release();
   console.log(e);
 });
 
@@ -48,11 +49,17 @@ import {index} from './routes/index';
 import {login} from './routes/login';
 import {signup} from './routes/signup';
 import {listings} from './routes/listings';
-import {profile} from './routes/profile';
+import {profile} from './routes/profile/profile';
+import {personalInfo} from './routes/profile/personalInfo';
+import {uploadItem} from './routes/profile/uploadItem';
+import {messages} from './routes/profile/messages'
 import {schedule} from './routes/schedule';
 app.use('/', index);
 app.use('/login', login);
 app.use('/signup', signup);
 app.use('/listings', listings);
 app.use('/profile', profile);
+profile.use('/personal_info', personalInfo);
+profile.use('/upload_item', uploadItem);
+profile.use('/messages', messages);
 app.use('/schedule', schedule);

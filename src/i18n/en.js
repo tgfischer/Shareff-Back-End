@@ -13,6 +13,7 @@ export const nls = {
   INVALID_IMAGE_TYPE: 'The image that you tried to upload is invalid',
   INVALID_PARAMETER_SET: 'Invalid parameter set. Please edit the request to contain the proper parameters.',
   END_BEFORE_START_DATE: 'The propose start date must come before the proposed end date.',
+  ITEM_NOT_FOUND: 'The item that you are looking for doesn\'t seem to exist',
 
   /* Miscellaneous Message */
   MOMENT_DATE_FORMAT: 'YYYY-MM-DD'
