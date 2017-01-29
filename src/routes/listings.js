@@ -55,7 +55,7 @@ router.post('/get_rental_item', (req, res) => {
 
   pool.connect().then(client => {
     // Get the rental item from the ID
-    client.query(`SELECT * FROM "rentalItem" WHERE "itemId"=$1 LIMIT 1`, [itemId]).then(result => {
+    client.query(`SELECT * FROM "rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId" WHERE "itemId"=$1 LIMIT 1`, [itemId]).then(result => {
       const {rows} = result;
 
       // If the if that the user is looking for does not exist
@@ -68,14 +68,27 @@ router.post('/get_rental_item', (req, res) => {
         })
       }
 
+      // Get the rental item and the owner ID
       const rentalItem = result.rows[0];
+      const {ownerId} = rentalItem;
 
-      // Get the rental item photos from the ID
-      client.query(`SELECT "photoUrl" FROM "rentalItemPhoto" WHERE "itemId"=$1`, [itemId]).then(result => {
-        client.release();
+      // Get the owner's information
+      client.query(`SELECT "firstName", "lastName", "email", "photoUrl", "description", "avgRating" FROM "userTable" WHERE "userId"=$1 LIMIT 1`, [ownerId]).then(result => {
+        // Set the owner of the item
+        rentalItem.owner = result.rows[0];
 
-        rentalItem.photos = result.rows;
-        res.status(200).json({rentalItem});
+        // Get the rental item photos from the ID
+        client.query(`SELECT "photoUrl" FROM "rentalItemPhoto" WHERE "itemId"=$1`, [itemId]).then(result => {
+          client.release();
+
+          rentalItem.photos = result.rows;
+          res.status(200).json({rentalItem});
+        }).catch(err => {
+          client.release();
+
+          console.error('ERROR: ', err.message, err.stack);
+          res.status(500).json({err});
+        });
       }).catch(err => {
         client.release();
 
