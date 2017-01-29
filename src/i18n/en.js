@@ -16,5 +16,11 @@ export const nls = {
   ITEM_NOT_FOUND: 'The item that you are looking for doesn\'t seem to exist',
 
   /* Miscellaneous Message */
-  MOMENT_DATE_FORMAT: 'YYYY-MM-DD'
+  MOMENT_DATE_FORMAT: 'YYYY-MM-DD',
+
+  /* Rent Request Statuses */ 
+  RRS_NOTIFICATION_PENDING: 'Notification pending', 
+  RRS_REQUEST_PENDING: 'Pending', 
+  RRS_REQUEST_ACCEPTED: 'Accepted',
+  RRS_REQUEST_REJECTED: 'Rejected'
 };
