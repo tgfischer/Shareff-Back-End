@@ -46,8 +46,6 @@ export const isLoggedIn = (req, res, next) => {
 
   // Get the userId from the token
   getPayload(token).then(payload => {
-    console.log(userId);
-    console.log(payload);
     // Make sure that the userIds match
     if (userId === payload) {
       next();

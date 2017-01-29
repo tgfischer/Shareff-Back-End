@@ -3,11 +3,12 @@ import bcrypt from 'bcrypt-nodejs';
 import multer from 'multer';
 import uuid from 'node-uuid';
 import path from 'path';
-import {pool} from '../app';
+import googleMaps from '@google/maps';
+import {pool} from '../../app';
 import {
   rollBack, isLoggedIn, processImage, getValidImageMimeTypes, getUser
-} from '../utils/Utils';
-import {nls} from '../i18n/en';
+} from '../../utils/Utils';
+import {nls} from '../../i18n/en';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ const storage = multer.diskStorage({
 /**
  * Update the user's personal information
  */
-router.post('/personal_info', isLoggedIn, (req, res) => {
+router.post('/get_personal_info', isLoggedIn, (req, res) => {
   // Get the updated personal information from the body
   const {
     userId, token, addressId, firstName, lastName, addressOne, addressTwo, city, province,
@@ -48,25 +49,50 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
 
       // Update the user's personal information
       client.query(query).then(result => {
-        query = `UPDATE "address" \
-                  SET "line1"='${addressOne}', "line2"='${addressTwo}', "city"='${city}', "province"='${province}', "postalCode"='${postalCode}' \
-                  WHERE "addressId"='${addressId}'`;
+        const googleMapsClient = googleMaps.createClient({
+          key: process.env.GOOGLE_MAPS_API_KEY
+        });
 
-        // Update the user's address
-        client.query(query).then(result => {
-          // Finish the transaction
-          client.query('COMMIT').then(result => {
-            // Get the user. The client gets released
-            getUser(client, userId, token).then(user => {
-              res.status(200).json({user});
+        // Geocode the address to get the latitude and longitude
+        googleMapsClient.geocode({
+          address: `${addressOne} ${addressTwo || ''}, ${city} ${province}, ${postalCode}`
+        }, (err, response) => {
+          if (err) {
+            return rollBack(err, client, res);
+          }
+
+          // Get the results from the response
+          let latitude, longitude = '';
+          const {results} = response.json;
+
+          // First check to see if there was a result
+          if (results.length > 0) {
+            const {lat, lng} = results[0].geometry.location;
+
+            latitude = lat;
+            longitude = lng;
+          }
+
+          query = `UPDATE "address" \
+                    SET "line1"=$1, "line2"=$2, "city"=$3, "province"=$4, "postalCode"=$5, "latitude"=$6, "longitude"=$7 \
+                    WHERE "addressId"=$8`;
+
+          // Update the user's address
+          client.query(query, [addressOne, addressTwo, city, province, postalCode, latitude, longitude, addressId]).then(result => {
+            // Finish the transaction
+            client.query('COMMIT').then(result => {
+              // Get the user. The client gets released
+              getUser(client, userId, token).then(user => {
+                res.status(200).json({user});
+              }).catch(err => {
+                res.status(500).json({err});
+              });
             }).catch(err => {
-              res.status(500).json({err});
+              rollBack(err, client, res);
             });
           }).catch(err => {
             rollBack(err, client, res);
           });
-        }).catch(err => {
-          rollBack(err, client, res);
         });
       }).catch(err => {
         rollBack(err, client, res);
@@ -74,29 +100,8 @@ router.post('/personal_info', isLoggedIn, (req, res) => {
     }).catch(err => {
       rollBack(err, client, res);
     });
-  });
-});
-
-/**
- * Upload a rental item
- */
-router.post('/upload_item', isLoggedIn, (req, res) => {
-  // Get the item details from the request
-  const {
-    title, category, description, price, addressId, terms, userId
-  } = req.body;
-
-  // Connect to the pool, and grab a client
-  pool.connect().then(client => {
-    const query = `INSERT INTO "rentalItem" (title, category, description, price, "addressId", "termsOfUse", "ownerId") VALUES ($1, $2, $3, $4, $5, $6, $7)`;
-
-    client.query(query, [title, category, description, price, addressId, terms, userId]).then(result => {
-      client.release();
-      res.status(200).json({success: true});
-    }).catch(err => {
-      client.release();
-      res.status(500).json({err});
-    });
+  }).catch(err => {
+    res.status(500).json({err});
   });
 });
 
@@ -150,8 +155,10 @@ router.post('/upload_profile_photo', multer({storage}).array('files'), isLoggedI
         // Return the error
         return res.status(500).json({err});
       });
+    }).catch(err => {
+      res.status(500).json({err});
     });
   });
 });
 
-export {router as profile}
+export {router as personalInfo}
