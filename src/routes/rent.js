@@ -1,6 +1,7 @@
 import express from 'express';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
+import {sendRentRequestNotificationEmail} from '../utils/EmailNotification';
 
 const router = express.Router();
 
@@ -32,25 +33,25 @@ router.post('/request', (req, res) => {
         let values; 
         if (req.body.comments && req.body.questions) {
             // Both comments and questions were added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "comments", "questions") VALUES ($1, $2, $3, $4, $5, $6, $7);`; 
-            values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING, req.body.comments, req.body.questions]; 
+            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "comments", "questions") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "itemId";`;values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING, req.body.comments, req.body.questions]; 
         } else if (req.body.comments) {
             // This means only comments was added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "comments") VALUES ($1, $2, $3, $4, $5, $6);`;
+            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "comments") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "itemId";`;
             values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING, req.body.comments]; 
         } else if (req.body.questions) {
             // This means only questions was added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "questions") VALUES ($1, $2, $3, $4, $5, $6);`;
+            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "questions") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "itemId";`;
             values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING, req.body.questions]; 
         } else {
             // Neither comments or questions were added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status") VALUES ($1, $2, $3, $4, $5);`;
+            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status") VALUES ($1, $2, $3, $4, $5) RETURNING "itemId";`;
             values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING];
         }
 
         pool.connect().then(client => {
             client.query(query, values).then(result => {
                 client.release();
+                sendRentRequestNotificationEmail(result.rows[0]);
                 res.status(200).json({ success: true });
             }).catch(err => {
                 client.release();
@@ -83,10 +84,10 @@ router.post('/request/auto_update_status', (req, res) => {
 
         pool.connect().then(client => {
 
-            var query = `SELECT * FROM public."rentRequest" WHERE "rentRequestId" = $1;`;
+            let query = `SELECT * FROM public."rentRequest" WHERE "rentRequestId" = $1;`;
             client.query(query, [req.body.rentRequestId]).then(result => {
-                var currStatus = result.rows[0].status; 
-                var newStatus;
+                let currStatus = result.rows[0].status; 
+                let newStatus;
                 switch (currStatus) {
                     case nls.RRS_NOTIFICATION_PENDING: 
                         newStatus = nls.RRS_REQUEST_PENDING;
@@ -106,7 +107,7 @@ router.post('/request/auto_update_status', (req, res) => {
                         break;
                 }
 
-                var updateQuery = `UPDATE public."rentRequest" SET "status" = $1 WHERE "rentRequestId" = $2;`;
+                let updateQuery = `UPDATE public."rentRequest" SET "status" = $1 WHERE "rentRequestId" = $2;`;
                 client.query(updateQuery, [newStatus, req.body.rentRequestId]).then(updateResult => {
                     client.release();
                     res.status(200).json({ success: true });
@@ -150,7 +151,7 @@ router.post('/request/force_update_status', (req, res) => {
     } else {
 
         // Switch statement to ensure status is being set to the correct string. If the correct string wasn't passed, the newStatus will be set to null and no operation will proceed.'
-        var newStatus; 
+        let newStatus; 
         switch (req.body.status) {
             case nls.RRS_NOTIFICATION_PENDING: 
                 newStatus = nls.RRS_NOTIFICATION_PENDING;
@@ -171,7 +172,7 @@ router.post('/request/force_update_status', (req, res) => {
 
         if (newStatus != null) {
             pool.connect().then(client => {
-                var updateQuery = `UPDATE public."rentRequest" SET "status" = $1 WHERE "rentRequestId" = $2;`;
+                let updateQuery = `UPDATE public."rentRequest" SET "status" = $1 WHERE "rentRequestId" = $2;`;
                 client.query(updateQuery, [newStatus, req.body.rentRequestId]).then(updateResult => {
                     client.release();
                     res.status(200).json({ success: true });
