@@ -33,6 +33,7 @@
     "moment-range": "^3.0.0",
     "multer": "^1.2.1",
     "node-uuid": "^1.4.7",
+    "nodemailer": "^2.7.2",
     "path": "^0.12.7",
     "pg": "^6.1.2",
     "util": "^0.10.3",
