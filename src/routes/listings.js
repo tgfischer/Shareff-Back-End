@@ -10,8 +10,8 @@ const router = express.Router();
  */
 router.post('/', (req, res) => {
   // Get the variables from URL
-  const {startDate, endDate} = req.query;
-  let {q} = req.query;
+  const {startDate, endDate} = req.body;
+  let {q} = req.body;
 
   // Replace the spaces with |'s in the query. This allows us to match with each
   // variable in the string
@@ -19,27 +19,16 @@ router.post('/', (req, res) => {
 
   pool.connect().then(client => {
     // Query the database. ~* matches the regular expression, case insensitive
-    client.query(`SELECT * FROM "listings" WHERE "title" ~* '${q}' OR description ~* '${q}'`).then(result => {
+    client.query(`SELECT * FROM "rentalItem" WHERE "title" ~* $1 OR description ~* $1`, [q]).then(result => {
       client.release();
 
       // Mock the results for now
-      let {rows} = result;
-      rows = [{
-        title: 'Trailer',
-        description: 'This is a cool trailer'
-      }, {
-        title: '4x8 Trailer',
-        description: 'This is a cool trailer'
-      }, {
-        title: 'Another Trailer',
-        description: 'This is a cool 5x6 trailer'
-      }, {
-        title: 'Snowboard',
-        description: 'Burton snowboard with bindings'
-      }];
+      const {rows} = result;
+
+      console.log(JSON.stringify(rows, null, 2));
 
       // Return the result to the client
-      res.status(200).json({result});
+      res.status(200).json({result: rows});
     }).catch(err => {
       client.release();
       console.error('ERROR: ', err.message, err.stack);
