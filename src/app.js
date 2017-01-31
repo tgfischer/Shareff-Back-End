@@ -52,7 +52,8 @@ import {listings} from './routes/listings';
 import {profile} from './routes/profile/profile';
 import {personalInfo} from './routes/profile/personalInfo';
 import {uploadItem} from './routes/profile/uploadItem';
-import {messages} from './routes/profile/messages'
+import {messages} from './routes/profile/messages';
+import {myItems} from './routes/profile/myItems';
 import {schedule} from './routes/schedule';
 app.use('/', index);
 app.use('/login', login);
@@ -62,4 +63,5 @@ app.use('/profile', profile);
 profile.use('/personal_info', personalInfo);
 profile.use('/upload_item', uploadItem);
 profile.use('/messages', messages);
+profile.use('/my_items', myItems);
 app.use('/schedule', schedule);
