@@ -35,6 +35,22 @@ router.post('/request', (req, res) => {
                 // If a comments section is provided, it needs to be stored in the messages database, because it initializes a new convo
                 if (req.body.comments) {
                     // TODO: Kick off a new conversation with the message as the comments. 
+                    // We will need to create a conversation and then link a message to the conversation 
+                    /** 
+                     * Create a conversation: 
+                     *      - rentRequestId
+                     *      - ownerId => will need to come from the item! 
+                     *      - renterId 
+                     *      - startDate => moment.now(); 
+                     */
+
+                    /**
+                     * Create a message: 
+                     *      - senderId => this will be renterId, because they are sending this message 
+                     *      - timestamp => moment.now() again
+                     *      - content => req.body.comment 
+                     *      - conversationId => comes from above
+                     */
                 }
                 client.release();
                 sendRentRequestNotificationEmail(result.rows[0]);
