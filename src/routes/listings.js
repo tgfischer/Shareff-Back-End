@@ -25,8 +25,6 @@ router.post('/', (req, res) => {
       // Mock the results for now
       const {rows} = result;
 
-      console.log(JSON.stringify(rows, null, 2));
-
       // Return the result to the client
       res.status(200).json({result: rows});
     }).catch(err => {
