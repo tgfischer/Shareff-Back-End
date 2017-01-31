@@ -15,8 +15,8 @@ const router = express.Router();
  * @param status - string/text => the status of the item. Initially will be "notification pending".
  * 
  * Not required: 
- * @param comments - string/text
- * @param questions - string/text
+ * @param comments - string/text => when this is added, it will be inserted into the messages table because
+ * it will start a new conversation
  * 
  * @return success - boolean => was the operation successful - for confirmation on the front end 
  */
@@ -28,28 +28,14 @@ router.post('/request', (req, res) => {
             }
         });
     } else {
-        // Build the query based on whether or not there is a comments parameter or a questions parameter
-        let query; 
-        let values; 
-        if (req.body.comments && req.body.questions) {
-            // Both comments and questions were added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "comments", "questions") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING "itemId";`;values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING, req.body.comments, req.body.questions]; 
-        } else if (req.body.comments) {
-            // This means only comments was added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "comments") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "itemId";`;
-            values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING, req.body.comments]; 
-        } else if (req.body.questions) {
-            // This means only questions was added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status", "questions") VALUES ($1, $2, $3, $4, $5, $6) RETURNING "itemId";`;
-            values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING, req.body.questions]; 
-        } else {
-            // Neither comments or questions were added
-            query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status") VALUES ($1, $2, $3, $4, $5) RETURNING "itemId";`;
-            values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING];
-        }
-
+        let query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status") VALUES ($1, $2, $3, $4, $5) RETURNING "id", "itemId";`;
+        let values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING];
         pool.connect().then(client => {
             client.query(query, values).then(result => {
+                // If a comments section is provided, it needs to be stored in the messages database, because it initializes a new convo
+                if (req.body.comments) {
+                    // TODO: Kick off a new conversation with the message as the comments. 
+                }
                 client.release();
                 sendRentRequestNotificationEmail(result.rows[0]);
                 res.status(200).json({ success: true });
