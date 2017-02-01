@@ -1,10 +1,13 @@
 import express from 'express';
+import Moment from 'moment';
+import {extendMoment} from 'moment-range';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
+import {rollback} from '../utils/Utils';
 import {sendRentRequestNotificationEmail} from '../utils/EmailNotification';
 
 const router = express.Router();
-
+const moment = extendMoment(Moment);
 /** 
  * The following route will be used to create a rental request on an item. 
  * 
@@ -28,39 +31,89 @@ router.post('/request', (req, res) => {
             }
         });
     } else {
-        let query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status") VALUES ($1, $2, $3, $4, $5) RETURNING "id", "itemId";`;
-        let values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING];
-        pool.connect().then(client => {
-            client.query(query, values).then(result => {
-                // If a comments section is provided, it needs to be stored in the messages database, because it initializes a new convo
-                if (req.body.comments) {
-                    // TODO: Kick off a new conversation with the message as the comments. 
-                    // We will need to create a conversation and then link a message to the conversation 
-                    /** 
-                     * Create a conversation: 
-                     *      - rentRequestId
-                     *      - ownerId => will need to come from the item! 
-                     *      - renterId 
-                     *      - startDate => moment.now(); 
-                     */
+        // Depending on the provided comment parameter, we may need to use a transaction. 
+        if (req.body.comments) {
+            console.log("Beginning transaction to insert rent request and message");
+            pool.connect().then(client => {
+                // We need to use a transaction => select user; insert rentRequest, conversation and message 
+                // We need to select the user to let us know who to create a conversation/message for 
+                const selectUserQuery = `SELECT "ownerId" FROM public."rentalItem" WHERE "itemId"=$1;`;
+                client.query(selectUserQuery, [req.body.itemId]).then(userResult => {
+                    const user = userResult.rows[0];
 
-                    /**
-                     * Create a message: 
-                     *      - senderId => this will be renterId, because they are sending this message 
-                     *      - timestamp => moment.now() again
-                     *      - content => req.body.comment 
-                     *      - conversationId => comes from above
-                     */
-                }
-                client.release();
-                sendRentRequestNotificationEmail(result.rows[0]);
-                res.status(200).json({ success: true });
-            }).catch(err => {
-                client.release();
-                res.status(500).json({err});
+                    // Begin our transaction
+                    client.query('BEGIN').then(beginResult => {
+                        // First Insert -> Insert the rentRequest 
+                        const insRentReqQuery = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status") \
+                                                    VALUES ($1, $2, $3, $4, $5) RETURNING "requestId", "itemId";`;
+                        const insRentReqValues = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING];
+                        
+                        client.query(insRentReqQuery, insRentReqValues).then(insRentReqResult => {
+                            // Second Insert -> Insert the conversation 
+                            const result = insRentReqResult; 
+                            const insConvQuery = `INSERT INTO public."conversation" ("rentRequestId", "renterId", "ownerId", "startDate") \
+                                                    VALUES ($1, $2, $3, $4) RETURNING *;`;
+                            const insConvValues = [result.rows[0].requestId, req.body.renterId, user.ownerId, moment()]; 
+
+                            client.query(insConvQuery, insConvValues).then(insConvResult => {
+                                // Third Insert -> Insert the message 
+                                const insMsgQuery = `INSERT INTO public."message" ("senderId", "timeSent", "content", "conversationId") \
+                                                        VALUES ($1, $2, $3, $4) RETURNING *;`; 
+                                const insMsgValues = [req.body.renterId, moment(), req.body.comments, insConvResult.rows[0].id];
+                                
+                                client.query(insMsgQuery, insMsgValues).then(insMsgResult => {
+                                    // Finish our transaction 
+                                    client.query('COMMIT').then(endResult => {
+                                        client.release();
+                                        sendRentRequestNotificationEmail(result.rows[0]);
+                                        res.status(200).json({ success: true });
+                                    }).catch(err => {
+                                        // Catch from commit transaction
+                                        console.log(err);
+                                        rollback(err, client, res);  
+                                    });
+                                }).catch(err => {
+                                    // Catch from insert message query
+                                    console.log(err);
+                                    rollback(err, client, res); 
+                                });
+                            }).catch(err => {
+                                // Catch from insert conversation query
+                                console.log(err);
+                                rollback(err, client, res); 
+                            });
+                        }).catch(err => {
+                            // Catch from insert rent request query
+                            console.log(err);
+                            rollback(err, client, res);
+                        });
+                    }).catch(err => {
+                        // Catch from begin transaction
+                        console.log(err);
+                        rollback(err, client, res);  
+                    });
+                }).catch(err => {
+                    // Catch from select user query 
+                    console.log(err);
+                    res.status(500).json(err); 
+                });
             });
-
-        });
+        } else {
+            // There is no message to add, so we can just do a direct insert query for the rent request 
+            const query = `INSERT INTO public."rentRequest" ("renterId", "itemId", "startDate", "endDate", "status") \
+                            VALUES ($1, $2, $3, $4, $5) RETURNING "requestId", "itemId";`;
+            const values = [req.body.renterId, req.body.itemId, req.body.startDate, req.body.endDate, nls.RRS_NOTIFICATION_PENDING];
+            pool.connect().then(client => {
+                client.query(query, values).then(result => {
+                    client.release();
+                    sendRentRequestNotificationEmail(result.rows[0]);
+                    res.status(200).json({ success: true });
+                }).catch(err => {
+                    client.release();
+                    res.status(500).json({err});
+                });
+            });
+        }  
     } 
 });
 
