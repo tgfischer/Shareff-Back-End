@@ -18,15 +18,20 @@ router.post('/', (req, res) => {
   q = q.replace(/\s+/g, '|');
 
   pool.connect().then(client => {
+    const query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", substring("rentalItem"."description" for 250) AS "description", \
+                      "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."ownerId", "address"."city" \
+                    FROM "rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId" \
+                    WHERE "title" ~* $1 OR description ~* $1';
     // Query the database. ~* matches the regular expression, case insensitive
-    client.query(`SELECT * FROM "rentalItem" WHERE "title" ~* $1 OR description ~* $1`, [q]).then(result => {
+    // substring limits the amount of characters that are returned
+    client.query(query, [q]).then(result => {
       client.release();
 
       // Mock the results for now
       const {rows} = result;
 
       // Return the result to the client
-      res.status(200).json({result: rows});
+      res.status(200).json({listings: rows});
     }).catch(err => {
       client.release();
       console.error('ERROR: ', err.message, err.stack);
@@ -61,21 +66,11 @@ router.post('/get_rental_item', (req, res) => {
 
       // Get the owner's information
       client.query(`SELECT "firstName", "lastName", "email", "photoUrl", "description", "avgRating" FROM "userTable" WHERE "userId"=$1 LIMIT 1`, [ownerId]).then(result => {
+        client.release();
+        
         // Set the owner of the item
         rentalItem.owner = result.rows[0];
-
-        // Get the rental item photos from the ID
-        client.query(`SELECT "photoUrl" FROM "rentalItemPhoto" WHERE "itemId"=$1`, [itemId]).then(result => {
-          client.release();
-
-          rentalItem.photos = result.rows;
-          res.status(200).json({rentalItem});
-        }).catch(err => {
-          client.release();
-
-          console.error('ERROR: ', err.message, err.stack);
-          res.status(500).json({err});
-        });
+        res.status(200).json({rentalItem});
       }).catch(err => {
         client.release();
 
