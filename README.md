@@ -10,6 +10,8 @@
   5. PGPORT - This is the port that your PostgreSQL sandbox is running on
   6. JWT_SECRET - This is your JSON Web Token secret, so you can sign JWTs for authentication
   7. GOOGLE_MAPS_API_KEY - This is the API key for Google Maps. I'll message it to everyone
+  8. INFO_EMAIL_USERNAME - This is the email username being used for sending our email notifications.
+  9. INFO_EMAIL_PASSWORD - This is the passward for the email account we are using to send notifications.
 
 ## Running the application
 1. There are 3 scripts:
