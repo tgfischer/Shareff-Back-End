@@ -4,7 +4,7 @@ import {extendMoment} from 'moment-range';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
 import {rollback} from '../utils/Utils';
-import {sendRentRequestNotificationEmail} from '../utils/EmailNotification';
+import {sendRentRequestNotification} from '../utils/EmailNotification';
 
 const router = express.Router();
 const moment = extendMoment(Moment);
@@ -61,7 +61,7 @@ router.post('/request', (req, res) => {
                                 // Finish our transaction 
                                 client.query('COMMIT').then(endResult => {
                                     client.release();
-                                    sendRentRequestNotificationEmail(result.rows[0]);
+                                    sendRentRequestNotification(result.rows[0]);
                                     res.status(200).json({ success: true });
                                 }).catch(err => {
                                     // Catch from commit transaction
@@ -97,7 +97,7 @@ router.post('/request', (req, res) => {
             pool.connect().then(client => {
                 client.query(query, values).then(result => {
                     client.release();
-                    sendRentRequestNotificationEmail(result.rows[0]);
+                    sendRentRequestNotification(result.rows[0]);
                     res.status(200).json({ success: true });
                 }).catch(err => {
                     client.release();
