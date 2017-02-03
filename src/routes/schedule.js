@@ -82,7 +82,7 @@ router.post('/is_available', (req, res) => {
  *
  * @param itemId - uuid => the item that is being booked
  * @param rentRequestId - uuid => the request associated to the official booking
- * @param userId - uuid => the user making the booking
+ * @param userId - uuid => the user making the booking (THE RENTER)
  * @param startDate - date => the start of the booking
  * @param endDate - date => the end of the booking
  *

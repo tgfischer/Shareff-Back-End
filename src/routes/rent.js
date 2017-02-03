@@ -62,7 +62,7 @@ router.post('/request', isLoggedIn, (req, res) => {
                                 // Finish our transaction
                                 client.query('COMMIT').then(endResult => {
                                     client.release();
-                                    sendRentRequestNotificationEmail(result.rows[0]);
+                                    sendRentRequestNotification(result.rows[0]);
                                     res.status(200).json({ success: true });
                                 }).catch(err => {
                                     // Catch from commit transaction
@@ -98,7 +98,7 @@ router.post('/request', isLoggedIn, (req, res) => {
             pool.connect().then(client => {
                 client.query(query, values).then(result => {
                     client.release();
-                    sendRentRequestNotificationEmail(result.rows[0]);
+                    sendRentRequestNotification(result.rows[0]);
                     res.status(200).json({ success: true });
                 }).catch(err => {
                     client.release();
