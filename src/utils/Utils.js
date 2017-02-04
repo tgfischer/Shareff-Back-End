@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 import lwip from 'lwip';
 import validator from 'validator';
+import multer from 'multer';
+import uuid from 'node-uuid';
+import path from 'path';
 import {nls} from '../i18n/en';
 
 /**
@@ -152,7 +155,7 @@ export const processImage = ({path, width, height}, next) => {
 
     // Scale the image, and save it
     image.batch().scale(ratio).writeFile(path, (err) => {
-      return next(err);
+      return next(path, err);
     });
   });
 };
@@ -207,3 +210,24 @@ export const getUser = (client, userId, token) => {
     });
   });
 };
+
+/**
+ * Set the storage object with the proper destination url
+ *
+ * @param url
+ *    the destination url of where to save the photos
+ */
+export const Storage = (url) => {
+  // Set the profile photo and item photo destinations
+  // and make sure that you attach the extension to the uploaded file
+  const storage = multer.diskStorage({
+    destination: (req, file, next) => {
+      next(null, `./assets/photos/uploads/${url}`);
+    },
+    filename: (req, file, next) => {
+      next(null, uuid.v4().toString('hex') + path.extname(file.originalname))
+    }
+  });
+
+  return storage;
+}

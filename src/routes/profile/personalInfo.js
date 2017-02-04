@@ -6,20 +6,13 @@ import path from 'path';
 import googleMaps from '@google/maps';
 import {pool} from '../../app';
 import {
-  rollBack, isLoggedIn, processImage, getValidImageMimeTypes, getUser
+  rollBack, isLoggedIn, processImage, getValidImageMimeTypes, getUser, Storage
 } from '../../utils/Utils';
 import {nls} from '../../i18n/en';
 
 const router = express.Router();
 
-// Set the profile photo destination, and make sure that you attach the extension
-// to the uploaded file
-const storage = multer.diskStorage({
-  destination: './assets/photos/uploads/profile',
-  filename: (req, file, next) => {
-    next(null, uuid.v4().toString('hex') + path.extname(file.originalname))
-  }
-});
+const storage = Storage("items");
 
 /**
  * Update the user's personal information
@@ -110,6 +103,7 @@ router.post('/get_personal_info', isLoggedIn, (req, res) => {
  */
 router.post('/upload_profile_photo', multer({storage}).array('files'), isLoggedIn, (req, res) => {
   const photo = req.files[0];
+  //console.log(req.body);
 
   // Check to see if the photo is actually a photo
   if (!getValidImageMimeTypes().includes(photo.mimetype)) {
@@ -158,6 +152,50 @@ router.post('/upload_profile_photo', multer({storage}).array('files'), isLoggedI
     }).catch(err => {
       res.status(500).json({err});
     });
+  });
+});
+
+/**
+ * Upload an item's photos to the server, but don't store in db.
+ */
+router.post('/upload_item_photos', multer({storage}).array('files'), isLoggedIn, (req, res) => {
+  const photos = req.files;
+  let photoUrls = [];
+  let asyncCalls = [];
+
+  photos.forEach(function(photo) {
+    // Check to see if the photo is actually a photo
+    if (!getValidImageMimeTypes().includes(photo.mimetype)) {
+      return res.status(400).json({
+        err: {
+          message: nls.INVALID_IMAGE_TYPE
+        }
+      });
+    }
+
+    // Add the project's working directory to the path
+    const uploadDir = path.join(process.env.PWD, photo.path);
+
+    // Resize the image so it's 500 pixels wide
+    asyncCalls.push(new Promise((resolve, reject) => {
+      processImage({
+        width: 500,
+        path: uploadDir
+      }, (file, err) => {
+        photoUrls.push(file);
+        if (err) {
+          return reject(err);
+        }
+        resolve(true);
+      });
+    }));
+  });
+
+  Promise.all(asyncCalls).then(() => {
+    console.log(photoUrls);
+    res.status(200);
+  }, (err) => {
+    console.log(err);
   });
 });
 
