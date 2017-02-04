@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 // Escape all of the properties in the body
 app.use((req, res, next) => {
   for (let key in req.body) {
-    if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+    if (Object.prototype.hasOwnProperty.call(req.body, key) && typeof req.body[key] === 'string') {
       req.body[key] = validator.escape(req.body[key]);
     }
   }
