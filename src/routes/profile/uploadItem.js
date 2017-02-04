@@ -15,7 +15,7 @@ router.post('/upload_item', isLoggedIn, (req, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = `INSERT INTO public."rentalItem" ("title", "category", "description", "price", "addressId", "termsOfUse", "ownerId", "costPeriod") VALUES ($1, ARRAY[$2], $3, $4, $5, $6, $7, $8);`;
+    const query = `INSERT INTO public."rentalItem" ("title", "category", "description", "price", "addressId", "termsOfUse", "ownerId", "costPeriod") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
 
     client.query(query, [title, category, description, price, addressId, terms, userId, "days"]).then(result => {
       client.release();
