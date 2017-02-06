@@ -220,14 +220,16 @@ export const getUser = (client, userId, token) => {
 export const Storage = (url) => {
   // Set the profile photo and item photo destinations
   // and make sure that you attach the extension to the uploaded file
-  const storage = multer.diskStorage({
-    destination: (req, file, next) => {
-      next(null, `./assets/photos/uploads/${url}`);
-    },
-    filename: (req, file, next) => {
-      next(null, uuid.v4().toString('hex') + path.extname(file.originalname))
-    }
+  const mult = multer({
+    storage: multer.diskStorage({
+      destination: (req, file, next) => {
+        next(null, `./assets/photos/uploads/${url}`);
+      },
+      filename: (req, file, next) => {
+        next(null, uuid.v4().toString('hex') + path.extname(file.originalname))
+      }
+    })
   });
 
-  return storage;
+  return mult;
 }
