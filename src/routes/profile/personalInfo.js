@@ -170,31 +170,37 @@ router.post('/upload_item_photos', Storage('items').array('files'), isLoggedIn, 
   let asyncCalls = [];
 
   photos.forEach(function(photo) {
-    // Check to see if the photo is actually a photo
-    if (!getValidImageMimeTypes().includes(photo.mimetype)) {
-      return res.status(400).json({
-        err: {
+    //create promises for processing each photo
+    asyncCalls.push(new Promise((resolve, reject) => {
+      // Check to see if the photo is actually a photo
+      if (!getValidImageMimeTypes().includes(photo.mimetype)) {
+        let err = {
           message: nls.INVALID_IMAGE_TYPE
         }
-      });
-    }
 
-    // Add the project's working directory to the path
-    const uploadDir = path.join(process.env.PWD, photo.path);
+        reject(err);
+      }
 
-    // Resize the image so it's 500 pixels wide
-    asyncCalls.push(new Promise((resolve, reject) => {
+      // Add the project's working directory to the path
+      const uploadDir = path.join(process.env.PWD, photo.path);
+
+      // Resize the image so it's 200 pixels wide
       processImage({
         width: 200,
         height: 200,
         path: uploadDir
       }, (file, err) => {
-        // set a publicly accessible url
-        file = file.replace(/^[^_]*assets/, "").replace(/\\/g, "/");
-        photoUrls.push(file);
+        // if there is an error, reject promise
         if (err) {
           return reject(err);
         }
+
+        // set a publicly accessible url
+        file = file.replace(/^[^_]*assets/, "").replace(/\\/g, "/");
+        // add photo to the photoUrls array
+        photoUrls.push(file);
+
+        //if all went well, resolve promise
         resolve(true);
       });
     }));
@@ -211,7 +217,7 @@ router.post('/upload_item_photos', Storage('items').array('files'), isLoggedIn, 
         res.status(200).json(json);
       }).catch(err => {
         json.err = err;
-        res.status(500).json({json});
+        res.status(500).json(json);
       });
     }).catch(err => {
       // Release the client back to the pool
@@ -219,8 +225,10 @@ router.post('/upload_item_photos', Storage('items').array('files'), isLoggedIn, 
       json.err = err;
 
       // Return the error
-      return res.status(500).json({json});
+      return res.status(500).json(json);
     });
+  }).catch(err => {
+    return res.status(400).json({err});
   });
 });
 
