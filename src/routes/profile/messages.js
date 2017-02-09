@@ -1,6 +1,7 @@
 import express from 'express';
 import {pool} from '../../app';
 import {isLoggedIn} from '../../utils/Utils';
+
 const router = express.Router();
 
 router.post('/get_conversations', isLoggedIn, ({body}, res) => {
