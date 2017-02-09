@@ -101,7 +101,6 @@ router.post('/get_personal_info', isLoggedIn, (req, res) => {
  */
 router.post('/upload_profile_photo', Storage('profile').array('files'), isLoggedIn, (req, res) => {
   const photo = req.files[0];
-  let json = {};
 
   // Check to see if the photo is actually a photo
   if (!getValidImageMimeTypes().includes(photo.mimetype)) {
@@ -123,8 +122,7 @@ router.post('/upload_profile_photo', Storage('profile').array('files'), isLogged
     path: uploadDir
   }, (path, err) => {
     if (err) {
-      json.err = err;
-      return res.status(400).json({json});
+      return res.status(400).json({err});
     }
 
     // Create the publically accessible path to the photo by removing '/assets'
@@ -139,23 +137,19 @@ router.post('/upload_profile_photo', Storage('profile').array('files'), isLogged
       client.query(`UPDATE "userTable" SET "photoUrl"=$1 WHERE "userId"=$2`, [photoUrl, userId]).then(result => {
         // Get the user. The client gets released
         getUser(client, userId, token).then(user => {
-          json.user = user;
-          res.status(200).json(json);
+          res.status(200).json({user});
         }).catch(err => {
-          json.err = err;
-          res.status(500).json({json});
+          res.status(500).json({err});
         });
       }).catch(err => {
         // Release the client back to the pool
         client.release();
 
         // Return the error
-        json.err = err;
-        return res.status(500).json({json});
+        return res.status(500).json({err});
       });
     }).catch(err => {
-      json.err = err;
-      res.status(500).json({json});
+      res.status(500).json({err});
     });
   });
 });
@@ -208,16 +202,12 @@ router.post('/upload_item_photos', Storage('items').array('files'), isLoggedIn, 
 
   Promise.all(asyncCalls).then(() => {
     const {userId, token} = req.body;
-    let json = {};
 
     pool.connect().then(client => {
       getUser(client, userId, token).then(user => {
-        json.user = user;
-        json.photoUrls = photoUrls;
-        res.status(200).json(json);
+        res.status(200).json({user, photoUrls});
       }).catch(err => {
-        json.err = err;
-        res.status(500).json(json);
+        res.status(500).json({err});
       });
     }).catch(err => {
       // Release the client back to the pool
@@ -225,7 +215,7 @@ router.post('/upload_item_photos', Storage('items').array('files'), isLoggedIn, 
       json.err = err;
 
       // Return the error
-      return res.status(500).json(json);
+      return res.status(500).json({err});
     });
   }).catch(err => {
     return res.status(400).json({err});
