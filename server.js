@@ -20,4 +20,4 @@ module.exports = server.listen(PORT, () => {
 });
 
 // Start SocketIO
-require('./src/routes/profile/socket-io');
+require('./src/routes/profile/chat');
