@@ -11,19 +11,30 @@ router.post('/get_target_user', (req, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = 'SELECT "userTable"."userId", "userTable"."firstName", "userTable"."lastName", \
+    let query = 'SELECT "userTable"."userId", "userTable"."firstName", "userTable"."lastName", \
                     "userTable"."email", "userTable"."photoUrl", "userTable"."description", \
                     "userTable"."avgRating", "address"."line1", "address"."line2", \
                     "address"."city", "address"."province", "address"."postalCode", \
                     "address"."longitude", "address"."latitude" \
                     FROM "userTable" INNER JOIN "address" ON "userTable"."userId"="address"."userId" \
-                    WHERE "userTable"."userId"=$1 AND "address"."isPrimary"=\'true\'';
+                    WHERE "userTable"."userId"=$1 AND "address"."isPrimary"=\'true\' \
+                    LIMIT 1';
 
     client.query(query, [userId]).then(result => {
-      client.release();
-
       const targetUser = result.rows[0];
-      res.status(200).json({targetUser});
+      query = 'SELECT "itemId", "title", "category", "costPeriod", "price" FROM "rentalItem" WHERE "ownerId"=$1';
+
+      client.query(query, [userId]).then(result => {
+        client.release();
+
+        const targetItems = result.rows;
+        res.status(200).json({targetUser, targetItems});
+      }).catch(err => {
+        client.release();
+
+        console.log(JSON.stringify(err, null, 2));
+        res.status(500).json({err});
+      });
     }).catch(err => {
       client.release();
 

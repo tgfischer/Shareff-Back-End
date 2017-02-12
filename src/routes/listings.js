@@ -65,9 +65,9 @@ router.post('/get_rental_item', (req, res) => {
       const {ownerId} = rentalItem;
 
       // Get the owner's information
-      client.query(`SELECT "firstName", "lastName", "email", "photoUrl", "description", "avgRating" FROM "userTable" WHERE "userId"=$1 LIMIT 1`, [ownerId]).then(result => {
+      client.query(`SELECT "userId", "firstName", "lastName", "email", "photoUrl", "description", "avgRating" FROM "userTable" WHERE "userId"=$1 LIMIT 1`, [ownerId]).then(result => {
         client.release();
-        
+
         // Set the owner of the item
         rentalItem.owner = result.rows[0];
         res.status(200).json({rentalItem});
