@@ -19,19 +19,19 @@ router.post('/', (req, res) => {
 
   pool.connect().then(client => {
     const query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", substring("rentalItem"."description" for 250) AS "description", \
-                      "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."ownerId", "address"."city" \
-                    FROM "rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId" \
-                    WHERE "title" ~* $1 OR description ~* $1';
+                      "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."ownerId", \
+                      "address"."city", "userTable"."firstName" AS "ownerFirstName", \
+                      "userTable"."lastName" AS "ownerLastName" \
+                    FROM ("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
+                          INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId" \
+                    WHERE "title" ~* $1 OR "rentalItem"."description" ~* $1';
     // Query the database. ~* matches the regular expression, case insensitive
     // substring limits the amount of characters that are returned
     client.query(query, [q]).then(result => {
       client.release();
 
-      // Mock the results for now
-      const {rows} = result;
-
       // Return the result to the client
-      res.status(200).json({listings: rows});
+      res.status(200).json({listings: result.rows});
     }).catch(err => {
       client.release();
       console.error('ERROR: ', err.message, err.stack);
