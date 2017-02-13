@@ -1,29 +1,28 @@
 import express from 'express';
 import {pool} from '../../app';
+import {nls} from '../../i18n/en';
 import {isLoggedIn} from '../../utils/Utils';
 
 const router = express.Router();
+const getMyRequestsQuery = 'SELECT "rentRequest"."requestId", "rentRequest"."itemId", "rentalItem"."ownerId", "rentRequest"."startDate", "rentRequest"."endDate", "rentRequest"."status", \
+                      "rentalItem"."title" AS "itemTitle", concat_ws(\' \', "userTable"."firstName", "userTable"."lastName") AS "ownersName" \
+                FROM ("rentalItem" INNER JOIN "rentRequest" ON "rentalItem"."itemId"="rentRequest"."itemId") \
+                      INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
+                WHERE "rentRequest"."renterId"=$1';
 
 /**
  * Getting a list of my requests
  */
-router.post('/get_my_requests', isLoggedIn, (req, res) => {
+router.post('/get_my_requests', isLoggedIn, ({body}, res) => {
   // Get the ownerId from the request
-  const {userId} = req.body;
+  const {userId} = body;
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = 'SELECT "rentRequest"."requestId", "rentRequest"."itemId", "rentalItem"."ownerId", "rentRequest"."startDate", "rentRequest"."endDate", "rentRequest"."status", \
-                          "rentalItem"."title" AS "itemTitle", concat_ws(\' \', "userTable"."firstName", "userTable"."lastName") AS "ownersName" \
-                    FROM ("rentalItem" INNER JOIN "rentRequest" ON "rentalItem"."itemId"="rentRequest"."itemId") \
-                          INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
-                    WHERE "rentRequest"."renterId"=$1';
-
-    client.query(query, [userId]).then(result => {
+    client.query(getMyRequestsQuery, [userId]).then(({rows}) => {
       client.release();
 
-      const myRequests = result.rows;
-      res.status(200).json({myRequests});
+      res.status(200).json({myRequests: rows});
     }).catch(err => {
       client.release();
 
