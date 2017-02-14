@@ -48,7 +48,7 @@ router.post('/is_available', (req, res) => {
         var proposedRange = moment().range(proposedStartDate, proposedEndDate);
 
         pool.connect().then(client => {
-            client.query(`SELECT * FROM public."booking" WHERE "itemId"='${req.body.itemId}';`).then(result => {
+            client.query('SELECT * FROM public."booking" WHERE "itemId"=$1', [req.body.itemId]).then(result => {
                 client.release();
 
                 var overlap = false;    // assume it is available - then find if it is not
@@ -99,7 +99,7 @@ router.post('/book', (req, res) => {
     } else {
         // TODO: potentially check if the rent request (from rentRequestId) is in status "accepted"
         pool.connect().then(client => {
-            client.query(`INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate") VALUES ('${req.body.itemId}', '${req.body.rentRequestId}', '${req.body.userId}', '${req.body.startDate}', '${req.body.endDate}');`).then(result => {
+            client.query('INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate") VALUES ($1, $2, $3, $4);', [req.body.itemId, req.body.rentRequestId, req.body.userId, req.body.startDate, req.body.endDate]).then(result => {
                 client.release();
                 res.status(200).json({ success: true });
             }).catch(err => {
@@ -127,7 +127,7 @@ router.post('/book', (req, res) => {
 router.delete('/book', (req, res) => {
     if (req.body.bookingId) {
         pool.connect().then(client => {
-            client.query(`DELETE FROM public."booking" WHERE "bookingId"='${req.body.bookingId}';`).then(result => {
+            client.query('DELETE FROM public."booking" WHERE "bookingId"=$1;', [req.body.bookingId]).then(result => {
                 client.release();
                 res.status(200).json({ success: true });
             }).catch(err => {
@@ -137,7 +137,7 @@ router.delete('/book', (req, res) => {
         });
     } else if (req.body.itemId && req.body.startDate && req.body.endDate) {
         pool.connect().then(client => {
-            client.query(`DELETE FROM public."booking" WHERE "itemId"='${req.body.itemId}' AND "startDate"='${req.body.startDate}' AND "endDate"='${req.body.endDate}';`).then(result => {
+            client.query(`DELETE FROM public."booking" WHERE "itemId"=$1 AND "startDate"=$2 AND "endDate"=$3;`, [req.body.itemId, req.body.startDate, req.body.endDate]).then(result => {
                 client.release();
                 res.status(200).json({ success: true });
             }).catch(err => {
