@@ -21,7 +21,6 @@ router.post('/upload_item', isLoggedIn, (req, res) => {
       client.release();
       res.status(200).json({success: true});
     }).catch(err => {
-      console.log("error on insert query" + err);
       client.release();
 
       console.log(JSON.stringify(err, null, 2));

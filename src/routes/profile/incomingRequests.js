@@ -14,7 +14,7 @@ router.post('/get_incoming_requests', isLoggedIn, (req, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = 'SELECT "rentRequest"."requestId", "rentRequest"."itemId", "rentRequest"."startDate", "rentRequest"."endDate", \
+    const query = 'SELECT "rentRequest"."requestId", "rentRequest"."itemId", "rentRequest"."renterId", "rentRequest"."startDate", "rentRequest"."endDate", "rentRequest"."status", \
                           "rentalItem"."title" AS "itemTitle", concat_ws(\' \', "userTable"."firstName", "userTable"."lastName") AS "rentersName" \
                     FROM ("rentalItem" INNER JOIN "rentRequest" ON "rentalItem"."itemId"="rentRequest"."itemId") \
                           INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
