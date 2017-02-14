@@ -19,8 +19,10 @@ app.use(express.static('assets'));
 
 // Enable CORS since client and server are running on different ports
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
   next();
 });
 
@@ -54,9 +56,12 @@ import {personalInfo} from './routes/profile/personalInfo';
 import {addItem} from './routes/profile/addItem';
 import {messages} from './routes/profile/messages';
 import {myItems} from './routes/profile/myItems';
+import {myRequests} from './routes/profile/myRequests';
+import {incomingRequests} from './routes/profile/incomingRequests';
 import {schedule} from './routes/schedule';
 import {rent} from './routes/rent';
 import {tracking} from './routes/tracking';
+import {user} from './routes/user';
 app.use('/', index);
 app.use('/login', login);
 app.use('/signup', signup);
@@ -66,6 +71,9 @@ profile.use('/personal_info', personalInfo);
 profile.use('/add_item', addItem);
 profile.use('/messages', messages);
 profile.use('/my_items', myItems);
+profile.use('/my_requests', myRequests);
+profile.use('/incoming_requests', incomingRequests);
 app.use('/schedule', schedule);
 app.use('/rent', rent);
 app.use('/tracking', tracking);
+app.use('/user', user);

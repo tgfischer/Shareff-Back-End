@@ -10,13 +10,19 @@ const router = express.Router();
 router.post('/', isLoggedOut, (req, res) => {
   const {email, password} = req.body;
 
-  pool.connect().then(client => {
-    const query = `SELECT * \
-                    FROM "userTable", "address" \
-                    WHERE "email"='${email}' \
-                    LIMIT 1`;
+  /**
+   * Note to self: DO NOT inner join like this
+   *
+   *    ...
+   *    FROM "table1", "table2"
+   *    ...
+   *
+   * It will give you weird results, and might differ from what you would
+   * get if you ran it in the PostgreSQL terminal
+   */
 
-    client.query(query).then(result => {
+  pool.connect().then(client => {
+    client.query('SELECT * FROM "userTable" INNER JOIN "address" ON "userTable"."userId"="address"."userId" WHERE "email"=$1 LIMIT 1;', [email]).then(result => {
       let user = result.rows[0];
 
       // Verify that there is an email and password to check
