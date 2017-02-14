@@ -5,42 +5,42 @@
 /* RENT REQUEST TEMPLATES */
 // Template for the email sent to the item owner when they receive a rent request
 export const getRentRequestNotificationTemplate = (firstName, itemTitle) => {
-        return `<html>
-            <head>
-                <style> 
-                    .red {
-                        color: red;
-                    }
-                </style>
-            </head>
-            <body>
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> A rent request has been made on your item, <b>"${itemTitle}"</b>. Please head over to Shareff to view the request. </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
                 <div>
-                    <p> Hi ${firstName}! </p>
-                    <div> A rent request has been made on your item, "${itemTitle}". Please head over to Shareff to view the request. </div>
-                    <br/>
-                    <br/>
-                    <button class="red"> 
-                        Go to Shareff!
-                    </button>
-                    <br/>
-                    <br/>
-                    <i> Have a great day! </i>
-                    <br/>
-                    <br/>
-                    <div>
-                        <b> The Shareff Team </b><br/>
-                        London, ON, Canada<br/>
-                        info.shareff@gmail.com<br/>
-                    </div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
                 </div>
-            </body>
-        </html>`
+            </div>
+        </body>
+    </html>`;
 };
 
 /* REMINDER EMAIL TEMPLATES */
 // Template sent to the renter to remind them that their rental booking will start soon
 export const getRenterStartReminderNotificationTemplate = (firstName, itemTitle, booking) => {
-    return `<html>
+    return `
+    <html>
         <head>
             <style>
             
@@ -49,7 +49,8 @@ export const getRenterStartReminderNotificationTemplate = (firstName, itemTitle,
         <body> 
             <div> 
                 <p> Hi ${firstName}! </p>
-                <div> We just wanted to remind you that your item rental for ${itemTitle} begins at ${booking.startDate}! Head over to Shareff to view more details about your rental!' </div>
+                <div> We just wanted to remind you that your item rental for <b>"${itemTitle}"</b> begins at ${booking.startDate}. </div>
+                <div> Head over to Shareff to view more details about your rental! </div>
                 <br />
                 <br />
                 <button>
@@ -67,41 +68,244 @@ export const getRenterStartReminderNotificationTemplate = (firstName, itemTitle,
                 </div>
             </div>
         </body>
-    </html>`
+    </html>`;
 };
 
 // Template sent to the renter to remind them that their rental booking will end soon
 export const getRenterEndReminderNotificationTemplate = (firstName, itemTitle, booking) => {
-    return ``;
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> We just wanted to remind you that your item rental for <b>"${itemTitle}"</b> will end at ${booking.endDate}. </div>
+                <div> Head over to Shareff to view more details about your rental! </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
 };
 
 // Template sent to the owner to remind them that their rental item will be rented soon
 export const getOwnerStartReminderNotificationTemplate = (firstName, itemTitle, booking) => {
-    return ``;
+    return `
+    <html>
+        <head>
+            <style>
+            
+            </style>
+        </head>
+        <body> 
+            <div> 
+                <p> Hi ${firstName}! </p>
+                <div> We just wanted to remind you that your item <b>"${itemTitle}"</b> will be rented beginning at ${booking.startDate}. </div>
+                <div> Head over to Shareff to view more details about your rental! </div>
+                <br />
+                <br />
+                <button>
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
 };
 
 // Template sent to the owner to remind them that their rental item will be returned soon
 export const getOwnerEndReminderNotificationTemplate = (firstName, itemTitle, booking) => {
-    return ``;
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> We just wanted to remind you that your item <b>"${itemTitle}"</b> will be returned at ${booking.endDate}. </div>
+                <div> Head over to Shareff to view more details about your rental! </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
 };
 
 /* CONFIRMATION EMAIL TEMPLATES */
 // Template sent to the renter for them to confirm they received their rental item 
 export const getRenterStartConfirmationNotificationTemplate = (firstName, itemTitle, booking) => {
-    return ``;
+    return `
+    <html>
+        <head>
+            <style>
+            
+            </style>
+        </head>
+        <body> 
+            <div> 
+                <p> Hi ${firstName}! </p>
+                <div> We would like to confirm that you have received your rental item, <b>"${itemTitle}"</b>. </div>
+                <div> Please click the link below to confirm that you received this item. </div>
+                <br />
+                <br />
+                <button>
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
 };
 
 // Template sent to the renter for them to confirm they returned their rental item 
 export const getRenterEndConfirmationNotificationTemplate = (firstName, itemTitle, booking) => {
-    return ``;
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> We would like to confirm that you have return your rental item, <b>"${itemTitle}"</b>. </div>
+                <div> Please click the link below to confirm that you returned this item. </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
 };
 
 // Template sent to the owner for them to confirm they delivered their rental item 
 export const getOwnerStartConfirmationNotificationTemplate = (firstName, itemTitle, booking) => {
-    return ``;
+    return `
+    <html>
+        <head>
+            <style>
+            
+            </style>
+        </head>
+        <body> 
+            <div> 
+                <p> Hi ${firstName}! </p>
+                <div> We would like to confirm that you have delivered your rental item, <b>"${itemTitle}"</b>. </div>
+                <div> Please click the link below to confirm that you delivered this item. </div>
+                <br />
+                <br />
+                <button>
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
 };
 
 // Template sent to the owner for them to confirm they received their rental item back => booking over
 export const getOwnerEndConfirmationNotificationTemplate = (firstName, itemTitle, booking) => {
-    return ``;
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> We would like to confirm that your rental item, <b>"${itemTitle}"</b>, has been returned to you. </div>
+                <div> Please click the link below to confirm that this item has been returned. </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
 };

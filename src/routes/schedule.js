@@ -90,7 +90,7 @@ router.post('/is_available', (req, res) => {
  *
  */
 router.post('/book', (req, res) => {
-    if (!req.body.itemId || !req.body.rentRequestId || !req.body.userId || !req.body.startDate || !req.body.endDate) {
+    if (!req.body.itemId || !req.body.rentRequestId || !req.body.userId || !req.body.startDate || !req.body.endDate) { // TODO: Switch the request to only need to rentRequestId
         res.status(500).json({
             err: {
                 message: nls.INVALID_PARAMETER_SET
