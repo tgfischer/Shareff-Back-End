@@ -7,17 +7,18 @@ const router = express.Router();
 /**
  * Upload a rental item
  */
-router.post('/upload_item', isLoggedIn, (req, res) => {
+router.post('/add_item', isLoggedIn, (req, res) => {
   // Get the item details from the request
   const {
-    title, category, description, price, addressId, terms, userId
+    title, category, description, price, addressId, terms, userId, costPeriod, photos
   } = req.body;
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = `INSERT INTO public."rentalItem" ("title", "category", "description", "price", "addressId", "termsOfUse", "ownerId", "costPeriod") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
+    const query = `INSERT INTO public."rentalItem" ("title", "category", "description", "price", "addressId", "termsOfUse", "ownerId", "costPeriod", "photo") \
+      VALUES ($1, ARRAY[$2], $3, $4, $5, $6, $7, $8, ARRAY[$9]);`;
 
-    client.query(query, [title, category, description, price, addressId, terms, userId, "days"]).then(result => {
+    client.query(query, [title, category, description, price, addressId, terms, userId, costPeriod, photos]).then(result => {
       client.release();
       res.status(200).json({success: true});
     }).catch(err => {
@@ -32,4 +33,4 @@ router.post('/upload_item', isLoggedIn, (req, res) => {
   });
 });
 
-export {router as uploadItem}
+export {router as addItem}
