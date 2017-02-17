@@ -7,6 +7,24 @@ import path from 'path';
 import {nls} from '../i18n/en';
 
 /**
+ * This function generates the thumbnail path for images
+ *
+ * @param path
+ *    This is the path to the image
+ */
+const getThumbnailPath = ({path}) => {
+  const parts = path.split(".");
+  let thumbnail = path;
+
+  if (parts.length > 1) {
+    parts[parts.length - 2] += "_thumbnail";
+    thumbnail = parts.join(".");
+  }
+
+  return thumbnail;
+};
+
+/**
  * This function retrieves the payload from the JWT (user information). It can
  * also be used to verify that the JWT that was supplied by the client is valid,
  * so the user can access restricted routes.
@@ -134,7 +152,7 @@ export const rollBack = (err, client, res) => {
  *    The callback for the function, so it can be used with async in batch
  *    uploads
  */
-export const processImage = ({path, width, height}, next) => {
+export const processImage = ({path, width, height, isThumbnail}, next) => {
   // Open the photo so it can be resized
   lwip.open(path, (err, image) => {
     if (err) {
@@ -155,7 +173,20 @@ export const processImage = ({path, width, height}, next) => {
 
     // Scale the image, and save it
     image.batch().scale(ratio).writeFile(path, (err) => {
-      return next(path, err);
+      if (isThumbnail) {
+        // Resize the image so its 500 pixels wide
+        ratio = 500 / image.width();
+
+        // Generate the thumbnail path
+        path = getThumbnailPath({path});
+
+        // Scale the thumbnail, and save it
+        image.batch().scale(ratio).writeFile(path, (err) => {
+          return next(path, err);
+        });
+      } else {
+        return next(path, err);
+      }
     });
   });
 };
@@ -203,7 +234,7 @@ export const getUser = (client, userId, token) => {
       resolve(user);
     }).catch(err => {
       // Release the client
-      client.release();
+      client.release();z
 
       // Reject the promise with the error
       reject(err);

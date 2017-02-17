@@ -93,7 +93,8 @@ router.post('/upload_item_photos', Storage('items').array('files'), isLoggedIn, 
       // Resize the image so it's 200 pixels wide
       processImage({
         width: 1000,
-        path: uploadDir
+        path: uploadDir,
+        isThumbnail: true
       }, (file, err) => {
         // if there is an error, reject promise
         if (err) {
