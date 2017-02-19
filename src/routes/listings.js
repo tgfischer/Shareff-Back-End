@@ -12,7 +12,7 @@ const NUM_PER_PAGE = 10;
 router.post('/', (req, res) => {
   // Get the variables from URL
   const {startDate, endDate, page, location, maxPrice, maxDistance} = req.body;
-  const offset = page ? page * NUM_PER_PAGE : 0;
+  const offset = page && page >= 0 ? page * NUM_PER_PAGE : 0;
   let {q} = req.body;
 
   // Replace the spaces with |'s in the query. This allows us to match with each
