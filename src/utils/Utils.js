@@ -203,6 +203,11 @@ export const getValidImageMimeTypes = () => ([
 ]);
 
 /**
+ * The url for the placeholder photo
+ */
+export const PLACEHOLDER_PHOTO_URL = '/photos/white-image.png';
+
+/**
  * Get the user from the database. This function releases the client after the
  * query
  *

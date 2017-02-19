@@ -13,13 +13,12 @@ router.post('/my_items', isLoggedIn, (req, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = 'SELECT "itemId", "title", "category", "price", "costPeriod" FROM "rentalItem" WHERE "ownerId"=$1';
+    const query = 'SELECT "itemId", "title", array_to_json("category") AS "category", "price", "costPeriod" FROM "rentalItem" WHERE "ownerId"=$1';
 
-    client.query(query, [userId]).then(result => {
+    client.query(query, [userId]).then(({rows}) => {
       client.release();
 
-      const myItems = result.rows;
-      res.status(200).json({myItems});
+      res.status(200).json({myItems: rows});
     }).catch(err => {
       client.release();
 
