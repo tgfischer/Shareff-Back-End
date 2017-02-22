@@ -239,7 +239,7 @@ export const getUser = (client, userId, token) => {
       resolve(user);
     }).catch(err => {
       // Release the client
-      client.release();z
+      client.release();
 
       // Reject the promise with the error
       reject(err);
