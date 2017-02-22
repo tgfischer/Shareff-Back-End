@@ -22,7 +22,7 @@ router.post('/get_user', (req, res) => {
       });
     }).catch(err => {
       res.status(500).json({err});
-    });;
+    });
   }).catch(err => {
     return res.status(401).json({err});
   });

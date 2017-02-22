@@ -4,13 +4,15 @@ import {getPayload} from '../utils/Utils';
 import {nls} from '../i18n/en';
 
 const router = express.Router();
+const NUM_PER_PAGE = 10;
 
 /**
  * Get the the rental listings from the query
  */
 router.post('/', (req, res) => {
   // Get the variables from URL
-  const {startDate, endDate} = req.body;
+  const {startDate, endDate, page, location, maxPrice, maxDistance} = req.body;
+  const offset = page && page >= 0 ? page * NUM_PER_PAGE : 0;
   let {q} = req.body;
 
   // Replace the spaces with |'s in the query. This allows us to match with each
@@ -18,20 +20,38 @@ router.post('/', (req, res) => {
   q = q.replace(/\s+/g, '|');
 
   pool.connect().then(client => {
-    const query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", substring("rentalItem"."description" for 250) AS "description", \
-                      "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."ownerId", \
+    const query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", "rentalItem"."description", \
+                      "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."ownerId", "rentalItem"."category", "rentalItem"."photo", \
                       "address"."city", "userTable"."firstName" AS "ownerFirstName", \
                       "userTable"."lastName" AS "ownerLastName" \
                     FROM ("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
                           INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId" \
-                    WHERE "title" ~* $1 OR "rentalItem"."description" ~* $1';
+                    WHERE "rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1 \
+                    LIMIT $2 \
+                    OFFSET $3';
     // Query the database. ~* matches the regular expression, case insensitive
     // substring limits the amount of characters that are returned
-    client.query(query, [q]).then(result => {
-      client.release();
+    client.query(query, [q, NUM_PER_PAGE, offset]).then(({rows}) => {
+      const listings = rows;
 
-      // Return the result to the client
-      res.status(200).json({listings: result.rows});
+      // Now query the database for the total number of listings that match the
+      // query
+      client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE "rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1', [q]).then(({rows}) => {
+        client.release();
+
+        // Return the result to the client
+        res.status(200).json({
+          totalNumListings: Number(rows[0].totalNumListings),
+          numPerPage: NUM_PER_PAGE,
+          listings
+        });
+      }).catch(err => {
+        client.release();
+        console.error('ERROR: ', err.message, err.stack);
+
+        // Return the error to the client
+        res.status(500).json({err});
+      });
     }).catch(err => {
       client.release();
       console.error('ERROR: ', err.message, err.stack);
