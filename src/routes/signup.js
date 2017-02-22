@@ -37,14 +37,15 @@ router.post('/', isLoggedOut, (req, res) => {
           const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
 
           // Build the query to insert the user
-          query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password") \
-                    VALUES ($1, $2, $3, $4) \
-                    RETURNING "userId", "photoUrl"`;
+//          query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password") \
+//                    VALUES ($1, $2, $3, $4) \
+//                    RETURNING "userId", "photoUrl"`;
+          query = 'SELECT "createUser"($1, $2, $3, $4, null, null) INTO "userId";';
 
           // Insert the user into the users table
           client.query(query, [firstName, lastName, email, hash]).then(result => {
             // Get the userId for the new user
-            const {userId, photoUrl} = result.rows[0];
+            const {userId} = result.rows[0];
 
             const googleMapsClient = googleMaps.createClient({
               key: process.env.GOOGLE_MAPS_API_KEY

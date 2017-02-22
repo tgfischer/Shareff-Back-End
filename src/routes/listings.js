@@ -19,7 +19,7 @@ router.post('/', (req, res) => {
 
   pool.connect().then(client => {
     const query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", substring("rentalItem"."description" for 250) AS "description", \
-                      "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."ownerId", \
+                      "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."photos" "rentalItem"."ownerId", \
                       "address"."city", "userTable"."firstName" AS "ownerFirstName", \
                       "userTable"."lastName" AS "ownerLastName" \
                     FROM ("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
