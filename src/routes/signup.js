@@ -30,21 +30,17 @@ router.post('/', isLoggedOut, (req, res) => {
       } else {
         // Begin the transaction
         client.query('BEGIN').then(result => {
+          console.log(req.body);
           const {
             firstName, lastName, email, password, addressOne, addressTwo,
-            city, province, postalCode
+            city, province, postalCode, ccn, cvn, expiryDate
           } = req.body;
+
+          const expDate = new Date(expiryDate);
 
           // Hash the password with a salt, rather than storing plaintext
           const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
 
-          const expiryDate = {
-            month: 4,
-            year: 2020
-          }
-
-          const ccn = '4242424242424242';
-          const cvn = 567;
           let custId = '';
 
           // Create a new customer and then a new source with
@@ -54,8 +50,8 @@ router.post('/', isLoggedOut, (req, res) => {
             return stripe.customers.createSource(customer.id, {
               source: {
                  object: 'card',
-                 exp_month: expiryDate.month,
-                 exp_year: expiryDate.year,
+                 exp_month: expDate.getMonth()+1,
+                 exp_year: expDate.getFullYear(),
                  number: ccn,
                  cvc: cvn
               }
