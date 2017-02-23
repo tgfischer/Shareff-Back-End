@@ -8,13 +8,13 @@ const router = express.Router();
  * Getting a list of my items
  */
 router.post('/my_schedule', isLoggedIn, (req, res) => {
-  // Get the ownerId from the request
+  // Get the userId from the request
   const {userId} = req.body;
-  console.log("EMILY MADE IT HERE YAY!");
+  console.log("EMILY MADE IT HERE YAY! " + userId);
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = 'SELECT "itemId", "title", array_to_json("category") AS "category", "price", "costPeriod" FROM "rentalItem" WHERE "ownerId"=$1';
+    const query = 'SELECT * FROM "booking" WHERE "userId"=$1';
 
     client.query(query, [userId]).then(({rows}) => {
       client.release();
