@@ -5,7 +5,9 @@ import googleMaps from '@google/maps';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
 import {rollBack, isLoggedOut, getUser} from '../utils/Utils';
+import stripeWrapper from 'stripe';
 
+const stripe = stripeWrapper("sk_test_rFLCN6uHUJ4YAbD7U3xRCi9Y"); //test secret key
 const router = express.Router();
 
 router.post('/', isLoggedOut, (req, res) => {
@@ -35,6 +37,34 @@ router.post('/', isLoggedOut, (req, res) => {
 
           // Hash the password with a salt, rather than storing plaintext
           const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
+
+          const expiryDate = {
+            month: 4,
+            year: 2020
+          }
+
+          const ccn = '4242424242424242';
+          const cvn = 567;
+          let custId = '';
+
+          // Create a new customer and then a new source with
+          // the credit card they entered
+          stripe.customers.create({email}).then(function(customer){
+            custId = customer.id;
+            return stripe.customers.createSource(customer.id, {
+              source: {
+                 object: 'card',
+                 exp_month: expiryDate.month,
+                 exp_year: expiryDate.year,
+                 number: ccn,
+                 cvc: cvn
+              }
+            });
+          }).then(function(source) {
+            return stripe.customers.update(custId, {"source" : source.id});
+          }).then(function(customer) {
+            console.log(customer.sources.data);
+          });
 
           // Build the query to insert the user
           query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password") \
