@@ -35,7 +35,12 @@ router.post('/', isLoggedOut, (req, res) => {
             city, province, postalCode, ccn, cvn, expiryDate
           } = req.body;
 
-          const expDate = new Date(expiryDate);
+          const ccLast4Digits = ccn.substr(ccn.length-4);
+          const expDateFull = new Date(expiryDate);
+          const expDate = {
+            month: expDateFull.getMonth()+1,
+            year: expDateFull.getFullYear(),
+          }
 
           // Hash the password with a salt, rather than storing plaintext
           const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
@@ -46,20 +51,20 @@ router.post('/', isLoggedOut, (req, res) => {
             stripe.customers.createSource(customer.id, {
               source: {
                  object: 'card',
-                 exp_month: expDate.getMonth()+1,
-                 exp_year: expDate.getFullYear(),
+                 exp_month: expDate.month,
+                 exp_year: expDate.year,
                  number: ccn,
                  cvc: cvn
               }
             }).then(function(source) {
               stripe.customers.update(customer.id, {"source" : source.id}).then(customer => {
                 // Build the query to insert the user
-                query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "stripeCustomerId") \
-                          VALUES ($1, $2, $3, $4, $5) \
+                query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "stripeCustomerId", "ccExpiryDate", "ccLast4Digits") \
+                          VALUES ($1, $2, $3, $4, $5, $6, $7) \
                           RETURNING "userId", "photoUrl"`;
 
                 // Insert the user into the users table
-                client.query(query, [firstName, lastName, email, hash, customer.id]).then(result => {
+                client.query(query, [firstName, lastName, email, hash, customer.id, expDate, ccLast4Digits]).then(result => {
                   // Get the userId for the new user
                   const {userId, photoUrl} = result.rows[0];
 
