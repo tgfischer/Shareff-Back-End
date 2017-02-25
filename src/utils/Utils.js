@@ -119,7 +119,12 @@ export const isLoggedOut = (req, res, next) => {
  * @param client
  *    The client that has been executing the queries
  */
-export const rollBack = (err, client, res) => {
+export const rollBack = (err, client, res, stripe, customer) => {
+  // if stripe param was passed, delete customer from stripe db
+  if (stripe) {
+    stripe.customers.del(customer.id);
+  }
+
   client.query('ROLLBACK', () => {
     // Release the client back to the pool
     client.release();

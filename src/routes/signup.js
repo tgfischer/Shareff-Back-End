@@ -47,7 +47,7 @@ router.post('/', isLoggedOut, (req, res) => {
 
           // Create a new customer and then a new source for the customer
           // using the credit card they entered
-          stripe.customers.create({email}).then(function(customer){
+          stripe.customers.create({email}).then(customer => {
             stripe.customers.createSource(customer.id, {
               source: {
                  object: 'card',
@@ -58,13 +58,16 @@ router.post('/', isLoggedOut, (req, res) => {
               }
             }).then(function(source) {
               stripe.customers.update(customer.id, {"source" : source.id}).then(customer => {
+                //get card brand of first source since we're
+                //only storing one card
+                const ccBrand = customer.sources.data[0].brand;
                 // Build the query to insert the user
-                query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "stripeCustomerId", "ccExpiryDate", "ccLast4Digits") \
-                          VALUES ($1, $2, $3, $4, $5, $6, $7) \
+                query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "stripeCustomerId", "ccExpiryDate", "ccLast4Digits", "ccBrand") \
+                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
                           RETURNING "userId", "photoUrl"`;
 
                 // Insert the user into the users table
-                client.query(query, [firstName, lastName, email, hash, customer.id, expDate, ccLast4Digits]).then(result => {
+                client.query(query, [firstName, lastName, email, hash, customer.id, expDate, ccLast4Digits, ccBrand]).then(result => {
                   // Get the userId for the new user
                   const {userId, photoUrl} = result.rows[0];
 
@@ -77,7 +80,7 @@ router.post('/', isLoggedOut, (req, res) => {
                     address: `${addressOne} ${addressTwo || ''}, ${city} ${province}, ${postalCode}`
                   }, (err, response) => {
                     if (err) {
-                      return rollBack(err, client, res);
+                      return rollBack(err, client, res, stripe, customer);
                     }
 
                     // Get the results from the response
@@ -111,22 +114,20 @@ router.post('/', isLoggedOut, (req, res) => {
                           res.status(500).json({err});
                         });
                       }).catch(err => {
-                        rollBack(err, client, res);
+                        rollBack(err, client, res, stripe, customer);
                       });
                     }).catch(err => {
-                      rollBack(err, client, res);
+                      rollBack(err, client, res, stripe, customer);
                     });
                   });
                 }).catch(err => {
-                  rollBack(err, client, res);
+                  rollBack(err, client, res, stripe, customer);
                 });
               }).catch(err => {
-                rollBack(err, client, res);
+                rollBack(err, client, res, stripe, customer);
               });
             }).catch(err => {
-              // if there is an err with the credit card, delete the customer
-              stripe.customers.del(customer.id);
-              rollBack(err, client, res);
+              rollBack(err, client, res, stripe, customer);
             });
           });
         }).catch(err => {
