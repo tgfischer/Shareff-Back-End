@@ -4,10 +4,8 @@ import jwt from 'jsonwebtoken';
 import googleMaps from '@google/maps';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
-import {rollBack, isLoggedOut, getUser} from '../utils/Utils';
-import stripeWrapper from 'stripe';
+import {rollBack, isLoggedOut, getUser, stripe} from '../utils/Utils';
 
-const stripe = stripeWrapper(process.env.STRIPE_API_KEY);
 const router = express.Router();
 
 router.post('/', isLoggedOut, (req, res) => {

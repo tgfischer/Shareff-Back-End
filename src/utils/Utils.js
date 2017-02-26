@@ -5,6 +5,7 @@ import multer from 'multer';
 import uuid from 'node-uuid';
 import path from 'path';
 import {nls} from '../i18n/en';
+import stripeWrapper from 'stripe';
 
 /**
  * This function generates the thumbnail path for images
@@ -23,6 +24,11 @@ const getThumbnailPath = ({path}) => {
 
   return thumbnail;
 };
+
+/**
+ * This function create a stripe object using the api key
+ */
+export const stripe = stripeWrapper(process.env.STRIPE_API_KEY);
 
 /**
  * This function retrieves the payload from the JWT (user information). It can
