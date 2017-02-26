@@ -45,37 +45,85 @@ export const sendRatingNotification = () => {
 
 };
 
-// Rent Request Notification
-export const sendRentRequestNotification = (newRentRequest) => {
-    pool.connect().then(client => {
-        const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" WHERE "rentalItem"."itemId" = $1;`;
-        client.query(query, [newRentRequest.itemId]).then(result => {
-            client.release();
+const sendEmail = (mailOptions) => {
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            console.log("Error sending mail to: " + mailOptions.to);
+        } else {
+            console.log("Mail successfully sent to: " + mailOptions.to);
+        }
+    });
+};
 
-            // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner. 
-            let mailOptions = { 
-                from :  nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
-                to : result.rows[0].email,
-                subject : nls.RENT_REQUEST_MADE,
-                html: getRentRequestNotificationTemplate(result.rows[0].firstName, result.rows[0].title)
-            };
+const getBookingOwner = (booking) => {
 
-            transporter.sendMail(mailOptions, (err, info) => {
-                if (err) {
-                    console.log("Send Rent Request Notification Email");
-                    console.log("ERROR SENDING MAIL: " + err);
+};
 
-                    // TODO: Handle the error, resend? 
-                } else {
-                    console.log("MAIL SENT SUCCESSFULLY TO " + result.rows[0].email);
+const getBookingRenter = (booking) => {
 
-                    // TODO: Update the status of the rent request 
-                }
-            });
-        }).catch(err => {
-            client.release();
-            console.log(err);
-        });
+};
+
+export const sendStartReminders = (booking) => {
+    // Send a start reminder to the owner 
+    getBookingOwner(booking).then(owner => {
+        
+    }).catch(err => {
+
+    });
+
+    // Send a start reminder to the renter
+    getBookingRenter(booking).then(renter => {
+
+    }).catch(err => {
+        
+    });
+};
+
+export const sendStartConfirmations = (booking) => {
+    // Send a start confirmation to the owner 
+    getBookingOwner(booking).then(owner => {
+
+    }).catch(err => {
+
+    });
+
+    // Send a start confirmation to the renter
+    getBookingRenter(booking).then(renter => {
+
+    }).catch(err => {
+        
+    });
+};
+
+export const sendEndReminders = (booking) => {
+    // Send a end reminder to the owner 
+    getBookingOwner(booking).then(owner => {
+
+    }).catch(err => {
+
+    });
+
+    // Send a end reminder to the renter
+    getBookingRenter(booking).then(renter => {
+
+    }).catch(err => {
+        
+    });
+};
+
+export const sendEndConfirmations = (booking) => {
+    // Send a start confirmation to the owner 
+    getBookingOwner(booking).then(owner => {
+
+    }).catch(err => {
+
+    });
+
+    // Send a start confirmation to the renter
+    getBookingRenter(booking).then(renter => {
+
+    }).catch(err => {
+        
     });
 };
 
@@ -247,6 +295,29 @@ export const sendOwnerConfirmationNotification = (isStart, booking) => {
                 }
             });
 
+        });
+    });
+};
+
+// Rent Request Notification
+export const sendRentRequestNotification = (newRentRequest) => {
+    pool.connect().then(client => {
+        const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" WHERE "rentalItem"."itemId" = $1;`;
+        client.query(query, [newRentRequest.itemId]).then(result => {
+            client.release();
+
+            // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner. 
+            const mailOptions = { 
+                from :  nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+                to : result.rows[0].email,
+                subject : nls.RENT_REQUEST_MADE,
+                html: getRentRequestNotificationTemplate(result.rows[0].firstName, result.rows[0].title)
+            };
+            sendMail(mailOptions);
+            
+        }).catch(err => {
+            client.release();
+            console.log(err);
         });
     });
 };
