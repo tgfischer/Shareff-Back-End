@@ -86,23 +86,29 @@ router.post('/', isLoggedOut, (req, res) => {
                   getUser(client, userId, token).then(user => {
                     res.status(200).json({user});
                   }).catch(err => {
+                    console.log("Error1");
                     res.status(500).json({err});
                   });
                 }).catch(err => {
+                  console.log("Error2");
                   rollBack(err, client, res);
                 });
               }).catch(err => {
+                console.log("Error3");
                 rollBack(err, client, res);
               });
             });
           }).catch(err => {
+            console.log("Error4");
             rollBack(err, client, res);
           });
         }).catch(err => {
+          console.log("Error5");
           rollBack(err, client, res);
         });
       }
     }).catch(err => {
+      console.log("Error6");
       rollBack(err, client, res);
     });
   }).catch(err => {
