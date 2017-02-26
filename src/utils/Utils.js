@@ -5,6 +5,7 @@ import multer from 'multer';
 import uuid from 'node-uuid';
 import path from 'path';
 import {nls} from '../i18n/en';
+import stripeWrapper from 'stripe';
 
 /**
  * This function generates the thumbnail path for images
@@ -23,6 +24,11 @@ const getThumbnailPath = ({path}) => {
 
   return thumbnail;
 };
+
+/**
+ * This function create a stripe object using the api key
+ */
+export const stripe = stripeWrapper(process.env.STRIPE_API_KEY);
 
 /**
  * This function retrieves the payload from the JWT (user information). It can
@@ -119,7 +125,12 @@ export const isLoggedOut = (req, res, next) => {
  * @param client
  *    The client that has been executing the queries
  */
-export const rollBack = (err, client, res) => {
+export const rollBack = (err, client, res, stripe, customer) => {
+  // if stripe param was passed, delete customer from stripe db
+  if (stripe) {
+    stripe.customers.del(customer.id);
+  }
+
   client.query('ROLLBACK', () => {
     // Release the client back to the pool
     client.release();
@@ -269,3 +280,4 @@ export const Storage = (url) => {
 
   return mult;
 }
+>>>>>>> 74d13b49ab6eb6cdd32f129b5ec077717025677d
