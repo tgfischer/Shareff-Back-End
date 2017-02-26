@@ -280,4 +280,3 @@ export const Storage = (url) => {
 
   return mult;
 }
->>>>>>> 74d13b49ab6eb6cdd32f129b5ec077717025677d
