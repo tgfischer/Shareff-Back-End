@@ -99,7 +99,7 @@ router.post('/book', (req, res) => {
     } else {
         // TODO: potentially check if the rent request (from rentRequestId) is in status "accepted"
         pool.connect().then(client => {
-            client.query('INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate") VALUES ($1, $2, $3, $4);', [req.body.itemId, req.body.rentRequestId, req.body.userId, req.body.startDate, req.body.endDate]).then(result => {
+            client.query('INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", "status", "metaStatus") VALUES ($1, $2, $3, $4);', [req.body.itemId, req.body.rentRequestId, req.body.userId, req.body.startDate, req.body.endDate, "Pending", "Pending Booking Start"]).then(result => {
                 client.release();
                 res.status(200).json({ success: true });
             }).catch(err => {

@@ -40,11 +40,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// User Rating Notification 
-export const sendRatingNotification = () => {
-
-};
-
 const sendEmail = (mailOptions) => {
     transporter.sendMail(mailOptions, (err, info) => {
         if (err) {
@@ -56,246 +51,142 @@ const sendEmail = (mailOptions) => {
 };
 
 const getBookingOwner = (booking) => {
-
+    return new Promise((resolve, reject) => {
+        pool.connect().then(client => {
+            const getOwnerQuery = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" \ 
+                        FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" \
+                        WHERE "rentalItem"."itemId" = $1;`;
+            client.query(getOwnerQuery, [booking.itemId]).then(owner => {
+                client.release();
+                return resolve(owner.rows[0]);
+            });
+        }).catch(err => {
+            client.release();
+            return reject(err);
+        });
+    });
 };
 
 const getBookingRenter = (booking) => {
-
+    return new Promise((resolve, reject) => {
+        pool.connect().then(client => {
+            const getRenterQuery = `SELECT "email", "firstName" FROM public."userTable" WHERE "userId"=$1;`;
+            client.query(getRenterQuery, [booking.userId]).then(renter => {
+                const getItemTitle = `SELECT "title" FROM public."rentalItem" WHERE "itemId"=$1`;
+                client.query(getItemTitle, [booking.itemId]).then(itemTitle => {
+                    client.release();
+                    return resolve(renter.rows[0], itemTitle.rows[0]);
+                });
+            });
+        }).catch(err => {
+            client.release();
+            return reject(err);
+        });
+    });
 };
 
 export const sendStartReminders = (booking) => {
     // Send a start reminder to the owner 
     getBookingOwner(booking).then(owner => {
-        
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : owner.email,
+            subject : nls.OWNER_BOOKING_START_REMINDER,
+            html : getOwnerStartReminderNotificationTemplate(owner.firstName, owner.title, booking.startDate)
+        });
     }).catch(err => {
-
+        console.log("Error sending owner start reminders: " + err);
     });
 
     // Send a start reminder to the renter
-    getBookingRenter(booking).then(renter => {
-
+    getBookingRenter(booking).then((renter, title) => {
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : renter.email,
+            subject : nls.RENTER_BOOKING_START_REMINDER,
+            html : getRenterStartReminderNotificationTemplate(renter.firstName, title.title, booking.startDate)
+        });
     }).catch(err => {
-        
+        console.log("Error sending renter start reminders: " + err);
     });
 };
 
 export const sendStartConfirmations = (booking) => {
     // Send a start confirmation to the owner 
     getBookingOwner(booking).then(owner => {
-
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : owner.email,
+            subject : nls.OWNER_BOOKING_START_CONFIRMATION,
+            html : getOwnerStartConfirmationNotificationTemplate(owner.firstName, owner.title)
+        });
     }).catch(err => {
-
+        console.log("Error sending owner start confirmations: " + err);
     });
 
     // Send a start confirmation to the renter
-    getBookingRenter(booking).then(renter => {
-
+    getBookingRenter(booking).then((renter, title) => {
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : renter.email,
+            subject : nls.RENTER_BOOKING_START_CONFIRMATION,
+            html : getRenterStartConfirmationNotificationTemplate(renter.firstName, title.title)
+        });
     }).catch(err => {
-        
+        console.log("Error sending renter start confirmations: " + err);        
     });
 };
 
 export const sendEndReminders = (booking) => {
     // Send a end reminder to the owner 
     getBookingOwner(booking).then(owner => {
-
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : owner.email,
+            subject : nls.OWNER_BOOKING_END_REMINDER,
+            html : getOwnerEndReminderNotificationTemplate(owner.firstName, owner.title, booking.endDate)
+        });
     }).catch(err => {
-
+        console.log("Error sending owner end reminders: " + err);
     });
 
     // Send a end reminder to the renter
-    getBookingRenter(booking).then(renter => {
-
+    getBookingRenter(booking).then((renter, title) => {
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : renter.email,
+            subject : nls.RENTER_BOOKING_END_REMINDER,
+            html : getRenterEndReminderNotificationTemplate(renter.firstName, title.title, booking.endDate)
+        });
     }).catch(err => {
-        
+        console.log("Error sending renter end reminders: " + err);        
     });
 };
 
 export const sendEndConfirmations = (booking) => {
-    // Send a start confirmation to the owner 
+    // Send a end confirmation to the owner 
     getBookingOwner(booking).then(owner => {
-
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : owner.email,
+            subject : nls.OWNER_BOOKING_END_CONFIRMATION,
+            html : getOwnerEndConfirmationNotificationTemplate(owner.firstName, owner.title)
+        });
     }).catch(err => {
+        console.log("Error sending owner end confirmations: " + err);
 
     });
 
-    // Send a start confirmation to the renter
-    getBookingRenter(booking).then(renter => {
-
+    // Send a end confirmation to the renter
+    getBookingRenter(booking).then((renter, title) => {
+        sendMail({
+            from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : renter.email,
+            subject : nls.RENTER_BOOKING_END_CONFIRMATION,
+            html : getRenterEndConfirmationNotificationTemplate(renter.firstName, title.title)
+        });
     }).catch(err => {
-        
-    });
-};
-
-// Reminder Notifications
-export const sendRenterReminderNotification = (isStart, booking) => {
-    pool.connect().then(client => {
-        // Do a query here to get the renter's first name, email address, and the title of the item they are renting.. 
-        const userQuery = `SELECT "email", "firstName" FROM public."userTable" WHERE "userId"=$1;`;  // booking.userId contains the id of the person who is renting!
-        client.query(userQuery, [booking.userId]).then(userResult => {
-            const itemQuery = `SELECT "title" FROM public."rentalItem" WHERE "itemId"=$1;`;
-            client.query(itemQuery, [booking.itemId]).then(itemResult => {
-                client.release();
-
-                let subject, template; 
-                if (isStart) {
-                    // Renter start email
-                    subject = nls.RENTER_BOOKING_START_REMINDER;
-                    template = getRenterStartReminderNotificationTemplate(userResult.rows[0].firstName, itemResult.rows[0].title, booking.startDate);
-                } else {
-                    // Renter end email
-                    subject = nls.RENTER_BOOKING_END_REMINDER;
-                    template = getRenterEndReminderNotificationTemplate(userResult.rows[0].firstName, itemResult.rows[0].title, booking.endDate);
-                }
-
-                // Build the email options
-                const mailOptions = {
-                    from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
-                    to : userResult.rows[0].email,
-                    subject : subject,
-                    html : template
-                };
-
-                // Send the email 
-                transporter.sendMail(mailOptions, (err, info) => {
-                    if (err) {
-                        // resend(mailOptions); 
-                        console.log("ERROR SENDING RENTER REMINDER MAIL: " + err);
-                    } else {
-                        console.log("RENTER REMINDER MAIL SENT SUCCESSFULLY TO: " + userResult.rows[0].email);
-                    }
-                });
-            });  
-        });
-    });
-};
-
-export const sendOwnerReminderNotification = (isStart, booking) => {
-
-    pool.connect().then(client => {
-        const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" \ 
-                        FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" \
-                        WHERE "rentalItem"."itemId" = $1;`;
-
-        client.query(query, [booking.itemId]).then(result => {
-            client.release();
-
-            let subject, template; 
-            if (isStart) {
-                // Owner start email 
-                subject = nls.OWNER_BOOKING_START_REMINDER;
-                template = getOwnerStartReminderNotificationTemplate(result.rows[0].firstName, result.rows[0].title, booking.startDate);
-            } else {
-                // Owner end email 
-                subject = nls.OWNER_BOOKING_END_REMINDER; 
-                template = getOwnerEndReminderNotificationTemplate(result.rows[0].firstName, result.rows[0].title, booking.endDate);
-            }
-
-            // Build the email options
-            const mailOptions = {
-                from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
-                to : result.rows[0].email,
-                subject : subject,
-                html : template
-            };
-
-            // Send the email 
-            transporter.sendMail(mailOptions, (err, info) => {
-                if (err) {
-                    // resend(mailOptions); 
-                    console.log("ERROR SENDING OWNER REMINDER MAIL: " + err);
-                } else {
-                    console.log("OWNER REMINDER MAIL SENT SUCCESSFULLY TO: " + result.rows[0].email);
-                }
-            });
-
-        });
-    });
-    
-};
-
-// Confirmation Notifications
-export const sendRenterConfirmationNotification = (isStart, booking) => {
-    pool.connect().then(client => {
-        // Do a query here to get the renter's first name, email address, and the title of the item they are renting.. 
-        const userQuery = `SELECT "email", "firstName" FROM public."userTable" WHERE "userId"=$1;`;  // booking.userId contains the id of the person who is renting!
-        client.query(userQuery, [booking.userId]).then(userResult => {
-            const itemQuery = `SELECT "title" FROM public."rentalItem" WHERE "itemId"=$1;`;
-            client.query(itemQuery, [booking.itemId]).then(itemResult => {
-                client.release();
-
-                let subject, template; 
-                if (isStart) {
-                    // Renter start email
-                    subject = nls.RENTER_BOOKING_START_REMINDER;
-                    template = getRenterStartConfirmationNotificationTemplate(userResult.rows[0].firstName, itemResult.rows[0].title, booking.startDate);
-                } else {
-                    // Renter end email
-                    subject = nls.RENTER_BOOKING_END_REMINDER;
-                    template = getRenterEndConfirmationNotificationTemplate(userResult.rows[0].firstName, itemResult.rows[0].title, booking.endDate);
-                }
-
-                // Build the email options
-                const mailOptions = {
-                    from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
-                    to : userResult.rows[0].email,
-                    subject : subject,
-                    html : template
-                };
-
-                // Send the email 
-                transporter.sendMail(mailOptions, (err, info) => {
-                    if (err) {
-                        // resend(mailOptions); 
-                        console.log("ERROR SENDING RENTER REMINDER MAIL: " + err);
-                    } else {
-                        console.log("RENTER REMINDER MAIL SENT SUCCESSFULLY TO: " + userResult.rows[0].email);
-                    }
-                });
-            });  
-        });
-    });
-};
-
-export const sendOwnerConfirmationNotification = (isStart, booking) => {
-    pool.connect().then(client => {
-        const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" \ 
-                        FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" \
-                        WHERE "rentalItem"."itemId" = $1;`;
-
-        client.query(query, [booking.itemId]).then(result => {
-            client.release();
-
-            let subject, template; 
-            if (isStart) {
-                // Owner start email 
-                subject = nls.OWNER_BOOKING_START_REMINDER;
-                template = getOwnerStartConfirmationNotificationTemplate(result.rows[0].firstName, result.rows[0].title, booking.startDate);
-            } else {
-                // Owner end email 
-                subject = nls.OWNER_BOOKING_END_REMINDER; 
-                template = getOwnerEndConfirmationNotificationTemplate(result.rows[0].firstName, result.rows[0].title, booking.endDate);
-            }
-
-            // Build the email options
-            const mailOptions = {
-                from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
-                to : result.rows[0].email,
-                subject : subject,
-                html : template
-            };
-
-            // Send the email 
-            transporter.sendMail(mailOptions, (err, info) => {
-                if (err) {
-                    // resend(mailOptions); 
-                    console.log("ERROR SENDING OWNER REMINDER MAIL: " + err);
-                } else {
-                    console.log("OWNER REMINDER MAIL SENT SUCCESSFULLY TO: " + result.rows[0].email);
-                }
-            });
-
-        });
+        console.log("Error sending renter start confirmations: " + err);        
     });
 };
 
@@ -307,17 +198,21 @@ export const sendRentRequestNotification = (newRentRequest) => {
             client.release();
 
             // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner. 
-            const mailOptions = { 
+            sendMail({ 
                 from :  nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
                 to : result.rows[0].email,
                 subject : nls.RENT_REQUEST_MADE,
                 html: getRentRequestNotificationTemplate(result.rows[0].firstName, result.rows[0].title)
-            };
-            sendMail(mailOptions);
+            });
             
         }).catch(err => {
             client.release();
             console.log(err);
         });
     });
+};
+
+// User Rating Notification 
+export const sendRatingNotification = () => {
+
 };
