@@ -204,7 +204,6 @@ export const sendRentRequestNotification = (newRentRequest) => {
                 subject : nls.RENT_REQUEST_MADE,
                 html: getRentRequestNotificationTemplate(result.rows[0].firstName, result.rows[0].title)
             });
-            
         }).catch(err => {
             client.release();
             console.log(err);

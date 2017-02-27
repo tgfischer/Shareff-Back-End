@@ -9,6 +9,10 @@ import {
 
 const router = express.Router();
 const moment = extendMoment(Moment);        // create a moment object with more capability (such as date ranges)
+/*
+ALTER TABLE public.booking ADD COLUMN "metaStatus" varchar(50);
+ALTER TABLE public.booking ADD COLUMN "status" varchar(30);
+*/
 
 /** 
  * The following variables define function calls based on cron dates. Cron schedules use 6 parameters to specify date:
@@ -36,7 +40,7 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                     FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId" = "rentalItem"."itemId";`; 
     pool.connect().then(client => {
         client.query(query).then(result => {
-            
+    
             const bookings = result.rows;
             for (let i = 0; i < bookings.length; i++) {
                 const booking = bookings[i];
@@ -66,7 +70,6 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                         client.release();
                         console.log("Update Error: Start Reminders: " + err);
                     });
-
                 } else if (nowToStart < 0 && nowToStart <= timeAfterBooking && notificationStatus.equals("Start Reminder Sent")) {
                     // Case 2: Need to send a Booking Start Confirmation
 
@@ -96,7 +99,6 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                         client.release();
                         console.log("Update Error: End Reminders: " + err);
                     });
-
                 } else if (nowToEnd < 0 && nowToEnd <= timeAfterBooking && notificationStatus.equals("End Reminder Sent")) {
                     // Case 4: Need to send a Booking End Confirmation 
 
