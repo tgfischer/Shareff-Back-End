@@ -64,6 +64,7 @@ router.post('/request', isLoggedIn, (req, res) => {
                                     client.release();
                                     console.log("Sending notification: " + JSON.stringify(insRentReqResult, null, 2));
                                     sendRentRequestNotification(insRentReqResult.rows[0]);
+                                    
                                     res.status(200).json({ success: true });
                                 }).catch(err => {
                                     // Catch from commit transaction
