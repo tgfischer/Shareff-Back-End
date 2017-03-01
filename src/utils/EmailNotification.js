@@ -40,7 +40,8 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const sendEmail = (mailOptions) => {
+const sendMail = (mailOptions) => {
+    console.log("SENDING MAIL... ");
     transporter.sendMail(mailOptions, (err, info) => {
         if (err) {
             console.log("Error sending mail to: " + mailOptions.to);
@@ -75,7 +76,7 @@ const getBookingRenter = (booking) => {
                 const getItemTitle = `SELECT "title" FROM public."rentalItem" WHERE "itemId"=$1`;
                 client.query(getItemTitle, [booking.itemId]).then(itemTitle => {
                     client.release();
-                    return resolve(renter.rows[0], itemTitle.rows[0]);
+                    return resolve([renter.rows[0], itemTitle.rows[0]]);
                 });
             });
         }).catch(err => {
@@ -99,7 +100,9 @@ export const sendStartReminders = (booking) => {
     });
 
     // Send a start reminder to the renter
-    getBookingRenter(booking).then((renter, title) => {
+    getBookingRenter(booking).then(returnArr => {
+        const renter = returnArr[0];
+        const title = returnArr[1];
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
             to : renter.email,
@@ -125,7 +128,9 @@ export const sendStartConfirmations = (booking) => {
     });
 
     // Send a start confirmation to the renter
-    getBookingRenter(booking).then((renter, title) => {
+    getBookingRenter(booking).then(returnArr => {
+        const renter = returnArr[0];
+        const title = returnArr[1];
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
             to : renter.email,
@@ -151,7 +156,9 @@ export const sendEndReminders = (booking) => {
     });
 
     // Send a end reminder to the renter
-    getBookingRenter(booking).then((renter, title) => {
+    getBookingRenter(booking).then(returnArr => {
+        const renter = returnArr[0];
+        const title = returnArr[1];
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
             to : renter.email,
@@ -174,11 +181,12 @@ export const sendEndConfirmations = (booking) => {
         });
     }).catch(err => {
         console.log("Error sending owner end confirmations: " + err);
-
     });
 
     // Send a end confirmation to the renter
-    getBookingRenter(booking).then((renter, title) => {
+    getBookingRenter(booking).then(returnArr => {
+        const renter = returnArr[0];
+        const title = returnArr[1];
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
             to : renter.email,
@@ -192,17 +200,27 @@ export const sendEndConfirmations = (booking) => {
 
 // Rent Request Notification
 export const sendRentRequestNotification = (newRentRequest) => {
+    console.log("New rent request: " + JSON.stringify(newRentRequest, null, 2));
     pool.connect().then(client => {
         const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" WHERE "rentalItem"."itemId" = $1;`;
         client.query(query, [newRentRequest.itemId]).then(result => {
-            client.release();
-
+            console.log("The result is: " + JSON.stringify(result, null, 2));
             // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner. 
             sendMail({ 
                 from :  nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
                 to : result.rows[0].email,
                 subject : nls.RENT_REQUEST_MADE,
                 html: getRentRequestNotificationTemplate(result.rows[0].firstName, result.rows[0].title)
+            });
+
+            // After the mail has been sent, now we can update the status of the rent request to become PENDING rather than NOTIFICATION PENDING
+            const updateRRstatus = `UPDATE "rentRequest" SET "status"=$2 WHERE "requestId"=$1;`;
+            client.query(updateRRstatus, [newRentRequest.requestId, nls.RRS_REQUEST_PENDING]).then(result => {
+                client.release();
+                console.log("Updated rent request status successfully");
+            }).catch(err => {
+                client.release();
+                console.log("Error trying to update rent request status from Notification Pending to Pending " + err); 
             });
             
         }).catch(err => {

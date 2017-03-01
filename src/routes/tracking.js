@@ -2,6 +2,7 @@ import express from 'express';
 import schedule from 'node-schedule';
 import Moment from 'moment'; 
 import {extendMoment} from 'moment-range'; 
+import {nls} from '../i18n/en';
 import {pool} from '../app';
 import {
     sendStartReminders, sendStartConfirmations, sendEndReminders, sendEndConfirmations
@@ -37,17 +38,24 @@ const timeBeforeBooking = 1;    // This value is 1 hour before
 const timeAfterBooking = -0.25; // This value is 15 minutes after
 
 const tracker = schedule.scheduleJob(timeRule, () => {
-    console.log("Working on tracking...");
+    console.log("Tracking enabled");
 
     const query = `SELECT "booking".*, "rentalItem"."ownerId" \ 
                     FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId" = "rentalItem"."itemId";`; 
     pool.connect().then(client => {
         client.query(query).then(result => {
-            //client.release();
-            
+            client.release();
+
             const bookings = result.rows;
             for (let i = 0; i < bookings.length; i++) {
                 const booking = bookings[i];
+                const notificationMetaStatus = booking.metaStatus;
+
+                if (notificationMetaStatus == nls.BMS_END_CONF_SENT) {
+                    console.log("Moving on up -- ");
+                    continue;   // If the booking has already ended, then continue to the next booking
+                }
+                
                 const now = moment(); 
                 const start = moment(booking.startDate); 
                 const end = moment(booking.endDate);
@@ -55,83 +63,110 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                 // Get the duration from start to now 
                 const nowToStart = (moment.duration(start.diff(now))).asHours();
                 const nowToEnd = (moment.duration(end.diff(now))).asHours();
-                const notificationStatus = booking.metaStatus;
 
-                const updateQuery = `UPDATE "booking" SET "metaStatus"=$1 WHERE "bookingId"=$2;`;
-                if (nowToStart > 0 && nowToStart <= timeBeforeBooking && notificationStatus.equals("Pending Booking Start")) {
+                if (nowToStart > 0 && nowToStart <= timeBeforeBooking && (notificationMetaStatus == nls.BMS_PENDING_START)) {
                     // Case 1: Need to send a Booking Start Reminder
-
-                    // Send the start reminder 
+                    console.log("Send Start Reminders");
                     sendStartReminders(booking);
 
                     // Update this booking's metaStatus to be "Start Reminder Sent"
-                    client.query(query1, ["Start Reminder Sent", booking.bookingId]).then(result => {
-                        client.release();
-                    }).catch(err => {
-                        client.release();
-                    });
+                    updateBookingMetaStatus(nls.BMS_START_REM_SENT, booking.bookingId); 
 
-                } else if (nowToStart < 0 && nowToStart <= timeAfterBooking && notificationStatus.equals("Start Reminder Sent")) {
+                } else if (nowToStart < 0 && nowToStart <= timeAfterBooking && (notificationMetaStatus == nls.BMS_START_REM_SENT)) {
                     // Case 2: Need to send a Booking Start Confirmation
-
-                    // Send the start confirmation 
+                    console.log("Send Start Confirmations");
                     sendStartConfirmations(booking);
 
                     // Update the booking's metaStatus to be "Start Confirmation Sent"
-                    client.query(query1, ["Start Confirmation Sent", booking.bookingId]).then(result => {
-                        client.release();
-                    }).catch(err => {
-                        client.release();
-                    });
+                    updateBookingMetaStatus(nls.BMS_START_CONF_SENT, booking.bookingId);
 
-                } else if (nowToEnd > 0 && nowToEnd <= timeBeforeBooking && notificationStatus.equals("Start Confirmation Sent")) {
+                } else if (nowToEnd > 0 && nowToEnd <= timeBeforeBooking && (notificationMetaStatus == nls.BMS_START_CONF_SENT)) {
                     // Case 3: Need to send a Booking End Reminder
-
-                    // Send the end reminder
-                    sendEndReminder(booking);
+                    console.log("Send End Reminders");
+                    sendEndReminders(booking);
 
                     // Update the booking's metaStatus to be "End Reminder Sent"
-                    client.query(query1, ["End Reminder Sent", booking.bookingId]).then(result => {
-                        client.release();
-                    }).catch(err => {
-                        client.release();
-                    });
+                    updateBookingMetaStatus(nls.BMS_END_REM_SENT, booking.bookingId);
 
-                } else if (nowToEnd < 0 && nowToEnd <= timeAfterBooking && notificationStatus.equals("End Reminder Sent")) {
+                } else if (nowToEnd < 0 && nowToEnd <= timeAfterBooking && (notificationMetaStatus == nls.BMS_END_REM_SENT)) {
                     // Case 4: Need to send a Booking End Confirmation 
-
-                    // Send the end confirmation
+                    console.log("Send End Confirmations");
                     sendEndConfirmations(booking);
 
                     // Update the booking's metaStatus to be "End Confirmation Sent"
-                    client.query(query1, ["End Confirmation Sent", booking.bookingId]).then(result => {
-                        client.release();
-                    }).catch(err => {
-                        client.release();
-                    });
-                } else {
-                    client.release();
+                    updateBookingMetaStatus(nls.BMS_END_CONF_SENT, booking.bookingId);
+
+                } 
+            }
+        }).catch(err => {
+            client.release();
+            console.log(err);
+        }); // end booking query
+    }).catch(err => {
+        console.log(err);  
+    }); // end pool connect
+});
+
+const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
+    console.log("Updating booking status");
+
+    const query = `SELECT "booking".*, "rentalItem"."ownerId" \ 
+                    FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId" = "rentalItem"."itemId";`; 
+
+    pool.connect().then(client => {
+        client.query(query).then(result => {
+            const bookings = result.rows;
+            for (let i = 0; i < bookings.length; i++) {
+                const booking = bookings[i];
+                const status = booking.status; 
+                const metaStatus = booking.metaStatus;
+
+                if (status == nls.BOOKING_COMPLETE) {
+                    continue;   // If the booking is already complete, move on to the next booking
                 }
+
+                if (status == nls.BOOKING_PENDING && metaStatus == nls.BMS_START_CONF_SENT) {
+                    updateBookingStatus(nls.BOOKING_ACTIVE, booking.bookingId);
+
+                } else if (status == nls.BOOKING_ACTIVE && metaStatus == nls.BMS_END_CONF_SENT) {
+                    updateBookingStatus(nls.BOOKING_COMPLETE, booking.bookingId);
+
+                } 
             }
 
         }).catch(err => {
             client.release();
             console.log(err);
-        }); // end booking query
-    }); // end pool connect
+        });
+    }).catch(err => {
+        console.log(err);  
+    });
 });
 
-// const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
-//     console.log("Updating tracking status...");
+// The following function is just used to change the status of the bookings 
+const updateBookingStatus = (newStatus, bookingId) => {
+    const updateQuery = `UPDATE "booking" SET "status"=$1 WHERE "bookingId"=$2;`;
+    pool.connect().then(client => {
+        client.query(updateQuery, [newStatus, bookingId]).then(result => {
+            client.release();
+        }).catch(err => {
+            client.release();
+            console.log(err);
+        });
+    });
+};
 
-//     const query = `SELECT "booking".*, "rentalItem"."ownerId" \ 
-//                     FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId" = "rentalItem"."itemId";`; 
-
-//     pool.connect().then(client => {
-//         client.query(query).then(result => {
-
-//         });
-//     });
-// });
+// The following function is just used to change the meta status of the bookings
+const updateBookingMetaStatus = (newStatus, bookingId) => {
+    const updateQuery = `UPDATE "booking" SET "metaStatus"=$1 WHERE "bookingId"=$2;`;
+    pool.connect().then(client => {
+        client.query(updateQuery, [newStatus, bookingId]).then(result => {
+            client.release();
+        }).catch(err => {
+            client.release();
+            console.log(err);
+        });
+    });
+};
 
 export {router as tracking}

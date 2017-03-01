@@ -20,7 +20,7 @@ router.post('/get_incoming_requests', isLoggedIn, (req, res) => {
                           INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
                     WHERE "rentalItem"."ownerId"=$1 AND "rentRequest"."status"=$2';
 
-    client.query(query, [userId, nls.RRS_NOTIFICATION_PENDING]).then(result => {
+    client.query(query, [userId, nls.RRS_REQUEST_PENDING]).then(result => {
       client.release();
 
       const requests = result.rows;
