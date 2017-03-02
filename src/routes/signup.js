@@ -127,6 +127,8 @@ router.post('/', isLoggedOut, (req, res) => {
             }).catch(err => {
               rollBack(err, client, res, stripe, customer);
             });
+          }).catch(err => {
+            rollBack(err, client, res);
           });
         }).catch(err => {
           rollBack(err, client, res);
