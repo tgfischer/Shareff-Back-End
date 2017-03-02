@@ -280,3 +280,19 @@ export const Storage = (url) => {
 
   return mult;
 }
+
+/**
+ * Convert date from front end format, Month Year, ex: April 2017
+ * to db format, {month: month, year: year}, ex: {month: April, year: 2017}
+ * @param date
+ *    the date to convert
+ */
+export const convertDate = (date) => {
+   const expDateFull = new Date(date);
+   const expDate = {
+    month: expDateFull.getMonth()+1, //getMonth is 0 indexed
+    year: expDateFull.getFullYear(),
+   }
+
+   return expDate;
+}
