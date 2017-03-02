@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import googleMaps from '@google/maps';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
-import {rollBack, isLoggedOut, getUser, stripe} from '../utils/Utils';
+import {rollBack, isLoggedOut, getUser, stripe, convertDate} from '../utils/Utils';
 
 const router = express.Router();
 
@@ -33,12 +33,8 @@ router.post('/', isLoggedOut, (req, res) => {
             city, province, postalCode, ccn, cvn, expiryDate
           } = req.body;
 
-          const ccLast4Digits = ccn.substr(ccn.length-4);
-          const expDateFull = new Date(expiryDate);
-          const expDate = {
-            month: expDateFull.getMonth()+1,
-            year: expDateFull.getFullYear(),
-          }
+          // const ccLast4Digits = ccn.substr(ccn.length-4);
+          const expDate = convertDate(expiryDate);
 
           // Hash the password with a salt, rather than storing plaintext
           const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
@@ -54,18 +50,19 @@ router.post('/', isLoggedOut, (req, res) => {
                  number: ccn,
                  cvc: cvn
               }
-            }).then(function(source) {
+            }).then(source => {
               stripe.customers.update(customer.id, {"source" : source.id}).then(customer => {
                 //get card brand of first source since we're
                 //only storing one card
                 const ccBrand = customer.sources.data[0].brand;
+                const ccLast4Digits = customer.sources.data[0].last4;
                 // Build the query to insert the user
                 query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "stripeCustomerId", "ccExpiryDate", "ccLast4Digits", "ccBrand") \
                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
                           RETURNING "userId", "photoUrl"`;
 
                 // Insert the user into the users table
-                client.query(query, [firstName, lastName, email, hash, customer.id, expDate, ccLast4Digits, ccBrand]).then(result => {
+                client.query(query, [firstName, lastName, email, hash, customer.id, expiryDate, ccLast4Digits, ccBrand]).then(result => {
                   // Get the userId for the new user
                   const {userId, photoUrl} = result.rows[0];
 

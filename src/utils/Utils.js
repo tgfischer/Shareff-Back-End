@@ -281,19 +281,35 @@ export const Storage = (url) => {
   return mult;
 }
 
+/**
+ * Convert date from front end format, Month Year, ex: April 2017
+ * to db format, {month: month, year: year}, ex: {month: April, year: 2017}
+ * @param date
+ *    the date to convert
+ */
+export const convertDate = (date) => {
+   const expDateFull = new Date(date);
+   const expDate = {
+    month: expDateFull.getMonth()+1, //getMonth is 0 indexed
+    year: expDateFull.getFullYear(),
+   }
+
+   return expDate;
+}
+
 export const getNotificationLevel = (metaStatus) => {
   switch(metaStatus) {
-    case "Pending Status": 
+    case "Pending Status":
       return 0;
     case "Start Reminder Sent":
       return 1;
     case "Start Confirmation Sent":
       return 2;
-    case "End Reminder Sent": 
+    case "End Reminder Sent":
       return 3;
-    case "End Confirmation Sent": 
+    case "End Confirmation Sent":
       return 4;
     default:
       return 0;
   }
-};
+}
