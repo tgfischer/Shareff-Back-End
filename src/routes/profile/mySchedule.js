@@ -13,7 +13,7 @@ router.post('/my_schedule', isLoggedIn, (req, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = 'SELECT "booking"."bookingId" AS "id", "booking"."userId", "rentalItem"."ownerId", "rentalItem"."title", "booking"."startDate" AS "start", "booking"."endDate" AS "end" \
+    const query = 'SELECT "booking"."bookingId" AS "id", "booking"."userId", "rentalItem"."ownerId", "rentalItem"."title", "booking"."startDate" AS "start", "booking"."endDate" AS "end", "rentalItem"."itemId" \
     FROM "rentalItem" INNER JOIN "booking" ON "rentalItem"."itemId"="booking"."itemId" \
     WHERE "booking"."userId"=$1 OR "rentalItem"."ownerId"=$1';
 
