@@ -14,6 +14,7 @@ import {
 
 const router = express.Router();
 const moment = extendMoment(Moment);        // create a moment object with more capability (such as date ranges)
+
 /*
 ALTER TABLE public.booking ADD COLUMN "metaStatus" varchar(50);
 ALTER TABLE public.booking ADD COLUMN "status" varchar(30);
