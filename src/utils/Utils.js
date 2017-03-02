@@ -296,3 +296,20 @@ export const convertDate = (date) => {
 
    return expDate;
 }
+
+export const getNotificationLevel = (metaStatus) => {
+  switch(metaStatus) {
+    case "Pending Status":
+      return 0;
+    case "Start Reminder Sent":
+      return 1;
+    case "Start Confirmation Sent":
+      return 2;
+    case "End Reminder Sent":
+      return 3;
+    case "End Confirmation Sent":
+      return 4;
+    default:
+      return 0;
+  }
+}

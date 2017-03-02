@@ -22,5 +22,34 @@ export const nls = {
   RRS_NOTIFICATION_PENDING: 'Notification pending', 
   RRS_REQUEST_PENDING: 'Pending', 
   RRS_REQUEST_ACCEPTED: 'Accepted',
-  RRS_REQUEST_REJECTED: 'Rejected'
+  RRS_REQUEST_REJECTED: 'Rejected', 
+
+  /* Booking Meta Statuses */ 
+  BMS_PENDING_START: 'Pending Booking Start',
+  BMS_START_REM_SENT: 'Start Reminder Sent',
+  BMS_START_CONF_SENT: 'Start Confirmation Sent',
+  BMS_END_REM_SENT: 'End Reminder Sent',
+  BMS_END_CONF_SENT: 'End Confirmation Sent',
+
+  /* Booking Statuses */ 
+  BOOKING_PENDING: 'Booking Pending',
+  BOOKING_ACTIVE: 'Booking Active',
+  BOOKING_COMPLETE: 'Booking Complete',
+
+  /* Email Notification Subject Lines */ 
+  SHAREFF_ALERTS: 'Shareff Alerts', 
+  SHAREFF_REMINDERS: 'Shareff Reminders',
+  SHAREFF_CONFIRMATION: 'Shareff Confirmation', 
+  
+  RENT_REQUEST_MADE: '[Shareff - Rent Request] A Rent Request has been made for your item!',
+  RENTER_BOOKING_START_REMINDER: '[Shareff - Booking Reminder] Your rental booking begins soon!',
+  OWNER_BOOKING_START_REMINDER: '[Shareff - Booking Reminder] Your item is being rented soon!',
+  RENTER_BOOKING_END_REMINDER: '[Shareff - Booking Reminder] Your rental item must be returned soon!',
+  OWNER_BOOKING_END_REMINDER: '[Shareff - Booking Reminder] Your item is being returned soon!',
+  RENTER_BOOKING_START_CONFIRMATION: '[Shareff - Item Confirmation] Was your rental item delivered?',
+  OWNER_BOOKING_START_CONFIRMATION: '[Shareff - Item Confirmation] Did you deliver your item?',
+  RENTER_BOOKING_END_CONFIRMATION: '[Shareff - Item Confirmation] Did you return your rental item?',
+  OWNER_BOOKING_END_CONFIRMATION: '[Shareff - Item Confirmation] Was your item returned?', 
+  RENTER_BOOKING_RATING: '[Shareff - Booking Rating] Please review your renting experience!',
+  OWNER_BOOKING_RATING: '[Shareff - Booking Rating] Please review your renting experience!' //TODO: Change this to something better
 };

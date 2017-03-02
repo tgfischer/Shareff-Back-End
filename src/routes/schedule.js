@@ -82,7 +82,7 @@ router.post('/is_available', (req, res) => {
  *
  * @param itemId - uuid => the item that is being booked
  * @param rentRequestId - uuid => the request associated to the official booking
- * @param userId - uuid => the user making the booking
+ * @param userId - uuid => the user making the booking (THE RENTER)
  * @param startDate - date => the start of the booking
  * @param endDate - date => the end of the booking
  *
@@ -90,7 +90,7 @@ router.post('/is_available', (req, res) => {
  *
  */
 router.post('/book', (req, res) => {
-    if (!req.body.itemId || !req.body.rentRequestId || !req.body.userId || !req.body.startDate || !req.body.endDate) {
+    if (!req.body.itemId || !req.body.rentRequestId || !req.body.userId || !req.body.startDate || !req.body.endDate) { // TODO: Switch the request to only need to rentRequestId
         res.status(500).json({
             err: {
                 message: nls.INVALID_PARAMETER_SET
@@ -98,8 +98,9 @@ router.post('/book', (req, res) => {
         });
     } else {
         // TODO: potentially check if the rent request (from rentRequestId) is in status "accepted"
+        console.log("Trying to book");
         pool.connect().then(client => {
-            client.query('INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate") VALUES ($1, $2, $3, $4);', [req.body.itemId, req.body.rentRequestId, req.body.userId, req.body.startDate, req.body.endDate]).then(result => {
+            client.query('INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", "status", "metaStatus") VALUES ($1, $2, $3, $4, $5, $6);', [req.body.itemId, req.body.rentRequestId, req.body.userId, req.body.startDate, req.body.endDate, "Pending", "Pending Booking Start"]).then(result => {
                 client.release();
                 res.status(200).json({ success: true });
             }).catch(err => {
