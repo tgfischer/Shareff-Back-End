@@ -12,9 +12,14 @@
   7. GOOGLE_MAPS_API_KEY - This is the API key for Google Maps. I'll message it to everyone
   8. INFO_EMAIL_USERNAME - This is the email username being used for sending our email notifications.
   9. INFO_EMAIL_PASSWORD - This is the passward for the email account we are using to send notifications.
+  10. STRIPE_API_KEY - This is the stripe token, set the value as this: sk_test_rFLCN6uHUJ4YAbD7U3xRCi9Y
 
 ## Running the application
 1. There are 3 scripts:
   1. `npm start dev` - Sets the `NODE_ENV` environment variable to `development`
   2. `npm start prod` - Sets the `NODE_ENV` environment variable to `production`
   3. `npm start test` - Currently does nothing (TODO)
+  
+ ## Credit Card numbers you can use for signing up
+ 1. https://www.paypalobjects.com/en_US/vhelp/paypalmanager_help/credit_card_numbers.htm
+ 2. Or use this Visa number: 4111111111111111
