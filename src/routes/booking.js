@@ -42,7 +42,6 @@ router.post('/get_booking_info', (req, res) => {
                                     WHERE "rentalItem"."itemId" = $1;`;
                 client.query(ownerInfo, [booking.itemId]).then(ownerRes => {
                     client.release();
-                    
                     const owner = ownerRes.rows[0];
                     
                     // Now, build the official response object: 
@@ -152,9 +151,9 @@ router.post('/submit_review', (req, res) => {
                 // At this point, there could be two different insertion queries. 
                 if (req.body.title && req.body.comments) {
                     // 1. Inserting with a title and comments
-                    const insQuery = `INSERT INTO public."userReview" ("title", "comments", "userIdFor", "userIdFrom", "rating", "creationTime") \
+                    const insQuery = `INSERT INTO public."userReview" ("title", "comments", "userIdFor", "userIdFrom", "rating", "creationTime", "bookingId") \
                                         VALUES($1, $2, $3, $4, $5, $6);`;
-                    client.query(insQuery, [req.body.title, req.body.comments, userIdFor, userIdFrom, req.body.rating, moment()]).then(insResult => {
+                    client.query(insQuery, [req.body.title, req.body.comments, userIdFor, userIdFrom, req.body.rating, moment(), req.body.bookingId]).then(insResult => {
                         client.release();
 
                         // Async call to update the rating value associated with each user
