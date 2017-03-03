@@ -26,7 +26,7 @@ router.post('/', (req, res) => {
                       "userTable"."lastName" AS "ownerLastName" \
                     FROM ("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
                           INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId" \
-                    WHERE "rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1 \
+                    WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\' \
                     LIMIT $2 \
                     OFFSET $3';
     // Query the database. ~* matches the regular expression, case insensitive
@@ -36,7 +36,7 @@ router.post('/', (req, res) => {
 
       // Now query the database for the total number of listings that match the
       // query
-      client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE "rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1', [q]).then(({rows}) => {
+      client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\'', [q]).then(({rows}) => {
         client.release();
 
         // Return the result to the client
