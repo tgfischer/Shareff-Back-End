@@ -13,7 +13,7 @@ router.post('/my_items', isLoggedIn, (req, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    const query = 'SELECT "itemId", "title", array_to_json("category") AS "category", "price", "costPeriod" FROM "rentalItem" WHERE "ownerId"=$1';
+    const query = 'SELECT "itemId", "title", array_to_json("category") AS "category", "price", "costPeriod" FROM "rentalItem" WHERE "ownerId"=$1 AND "rentalItem"."status" != \'Archived\'';
 
     client.query(query, [userId]).then(({rows}) => {
       client.release();
@@ -40,7 +40,7 @@ router.post('/remove_my_item', isLoggedIn, (req, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    client.query('DELETE FROM "rentalItem" WHERE "itemId"=$1 AND "ownerId"=$2', [itemId, userId]).then(result => {
+    client.query('UPDATE "rentalItem" SET "status"=\'Archived\' WHERE "itemId"=$1 AND "ownerId"=$2', [itemId, userId]).then(result => {
       client.release();
       res.status(200).json({result});
     }).catch(err => {
