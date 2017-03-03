@@ -3,7 +3,7 @@ import Moment from 'moment';
 import {extendMoment} from 'moment-range';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
-import {rollback, isLoggedIn} from '../utils/Utils';
+import {rollback, isLoggedIn, getIncomingRequests} from '../utils/Utils';
 import {sendRentRequestNotification} from '../utils/EmailNotification';
 
 const router = express.Router();
@@ -123,9 +123,10 @@ router.post('/request', isLoggedIn, (req, res) => {
  * @return success - boolean
  */
 router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
-    const {request, approved} = req.body;
+    console.log(req.body);
+    const {request, approved, usedId} = req.body;
 
-    if (!request || !approved) {
+    if (!request || !approved || !req.body.userId) {
         res.status(500).json({
             err: {
                 message: nls.INVALID_PARAMETER_SET
@@ -133,46 +134,49 @@ router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
         });
     } else {
         const {requestId} = request;
+        getRentRequest(requestId).then(rentRequest => {
+            const status = rentRequest.rows[0].status;
+            let newStatus;
+            switch (status) {
+                case nls.RRS_NOTIFICATION_PENDING:
+                    newStatus = nls.RRS_REQUEST_PENDING;
+                    break;
+                case nls.RRS_REQUEST_PENDING:
+                    if (approved === true) {
+                        newStatus = nls.RRS_REQUEST_ACCEPTED;
+                        book(rentRequest.rows[0]); // Create a booking in the db
+                    } else if (approved === false) {
+                        newStatus = nls.RRS_REQUEST_REJECTED;
+                    } else {
+                        // The status is pending, and an approval was not specified. Keep it the same.
+                        newStatus = status;
+                    }
+                    break;
+                default:
+                    newStatus = status;
+                    break;
+            }
 
-        pool.connect().then(client => {
-            const query = 'SELECT * FROM public."rentRequest" WHERE "requestId"=$1;';
-
-            client.query(query, [requestId]).then(result => {
-                const currStatus = result.rows[0].status;
-                let newStatus;
-
-                switch (currStatus) {
-                    case nls.RRS_NOTIFICATION_PENDING:
-                        newStatus = nls.RRS_REQUEST_PENDING;
-                        break;
-                    case nls.RRS_REQUEST_PENDING:
-                        if (approved === true) {
-                            newStatus = nls.RRS_REQUEST_ACCEPTED;
-                            book(result.rows[0]); // Turn the accepted rent request into a scheduled booking
-                        } else if (approved === false) {
-                            newStatus = nls.RRS_REQUEST_REJECTED;
-                        } else {
-                            // The status is pending, and an approval was not specified. Keep it the same.
-                            newStatus = currStatus;
-                        }
-                        break;
-                    default:
-                        newStatus = currStatus;
-                        break;
-                }
-
+            // Update the rent request in the database 
+            pool.connect().then(client => {
                 const updateQuery = `UPDATE public."rentRequest" SET "status"=$1 WHERE "requestId"=$2;`;
                 client.query(updateQuery, [newStatus, requestId]).then(updateResult => {
                     client.release();
-                    res.status(200).json({ success: true });
                 }).catch(err => {
                     client.release();
-                    res.status(500).json({err});
                 });
+            });
+            
+            // Get the new updated set of incoming requests to return to the client
+            getIncomingRequests(req.body.userId).then(requests => {
+                res.status(200).json({requests});
             }).catch(err => {
-                client.release();
+                console.log("An error occurred while getting incoming requests");
                 res.status(500).json({err});
             });
+        }).catch(err => {
+            console.log("An error occurred while getting rent request." + err);
+            res.status(500).json({err});
         });
     }
 });
@@ -236,6 +240,21 @@ router.post('/request/force_update_status', isLoggedIn, (req, res) => {
         }
     }
 });
+
+const getRentRequest = (requestId) => {
+    return new Promise((resolve, reject) => {
+        pool.connect().then(client => { 
+            const query = 'SELECT * FROM public."rentRequest" WHERE "requestId"=$1;';
+            client.query(query, [requestId]).then(result => {
+                client.release();
+                return resolve(result);
+            }).catch(err => {
+                client.release();
+                return reject(err);
+            });
+        });
+    });
+};
 
 const book = (rentRequest) => {
     console.log("Attempting to create a booking with: " + JSON.stringify(rentRequest, null, 2));

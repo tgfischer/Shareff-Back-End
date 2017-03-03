@@ -328,6 +328,33 @@ export const updateAverageRating = (userId) => {
   });
 };
 
+export const getIncomingRequests = (userId) => {
+  return new Promise((resolve, reject) => {
+    pool.connect().then(client => {
+      const query = 'SELECT "rentRequest"."requestId", "rentRequest"."itemId", "rentRequest"."renterId", "rentRequest"."startDate", "rentRequest"."endDate", "rentRequest"."status", \
+                            "rentalItem"."title" AS "itemTitle", concat_ws(\' \', "userTable"."firstName", "userTable"."lastName") AS "rentersName" \
+                      FROM ("rentalItem" INNER JOIN "rentRequest" ON "rentalItem"."itemId"="rentRequest"."itemId") \
+                            INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
+                      WHERE "rentalItem"."ownerId"=$1 AND "rentRequest"."status"=$2';
+
+      client.query(query, [userId, nls.RRS_REQUEST_PENDING]).then(result => {
+        client.release();
+
+        const requests = result.rows;
+        return resolve(requests);
+      }).catch(err => {
+        client.release();
+
+        console.error('ERROR: ', err.message, err.stack);
+        return reject(err);
+      });
+    }).catch(err => {
+      console.error('ERROR: ', err.message, err.stack);
+      return reject(err);
+    });
+  });
+};
+
 export const getNotificationLevel = (metaStatus) => {
   switch(metaStatus) {
     case "Pending Status":
