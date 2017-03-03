@@ -5,6 +5,7 @@ import multer from 'multer';
 import uuid from 'node-uuid';
 import path from 'path';
 import {nls} from '../i18n/en';
+import {pool} from '../app';
 import stripeWrapper from 'stripe';
 
 /**
@@ -280,6 +281,36 @@ export const Storage = (url) => {
 
   return mult;
 }
+
+/** 
+ * Update the average rating value of a specified user to include a new rating
+ */
+export const updateAverageRating = (userId) => { 
+  pool.connect().then(client => {
+    const query = `SELECT "rating" FROM public."userReview" WHERE "userIdFor"=$1;`;
+    client.query(query, [userId]).then(result => {
+      const ratings = result.rows;
+      const size = ratings.length; 
+
+      let average = 0;
+      for (let i = 0; i < size; i++) {
+        average += ratings[i].rating;
+      }
+      average = average/size;
+
+      const newRatingQuery = `UPDATE "userTable" SET "avgRating"=$1 WHERE "userId"=$2;`;
+      client.query(newRatingQuery, [average, userId]).then(result => {
+        client.release();
+      }).catch(err => {
+        client.release();
+        console.log(err);
+      });
+    }).catch(err => {
+      console.log(err);
+      client.release();
+    });
+  });
+};
 
 export const getNotificationLevel = (metaStatus) => {
   switch(metaStatus) {
