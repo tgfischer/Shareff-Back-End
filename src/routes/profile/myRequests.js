@@ -59,7 +59,7 @@ router.post('/cancel_request', isLoggedIn, ({body}, res) => {
       }
 
       // Double check that the request has not been approved or cancelled already
-      if (rows[0].status === 'request.status.accepted' || rows[0].status === 'request.status.cancelled') {
+      if (rows[0].status === 'request.status.accepted' || rows[0].status === 'request.status.rejected' || rows[0].status === 'request.status.cancelled') {
         client.release();
         return res.status(500).json({
           err: {
