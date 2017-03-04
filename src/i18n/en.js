@@ -1,5 +1,5 @@
 // TODO: Move these messages to the client-side, and return the key
-// e.g. GENERAL_ERROR_MESSAGE: 'error.general'
+// e.g. GENERIC_ERROR_MESSAGE: 'error.general'
 export const nls = {
   SERVER_STARTED: 'Server listening on port',
   PRODUCTION_MODE: '>>> Production Mode',
@@ -19,11 +19,11 @@ export const nls = {
   MOMENT_DATE_FORMAT: 'YYYY-MM-DD',
 
   /* Rent Request Statuses */
-  RRS_NOTIFICATION_PENDING: 'Notification pending',
-  RRS_REQUEST_PENDING: 'Pending',
-  RRS_REQUEST_ACCEPTED: 'Accepted',
-  RRS_REQUEST_REJECTED: 'Rejected',
-  RRS_REQUEST_CANCELLED: 'Cancelled',
+  RRS_NOTIFICATION_PENDING: 'request.status.notificationPending',
+  RRS_REQUEST_PENDING: 'request.status.pending',
+  RRS_REQUEST_ACCEPTED: 'request.status.accepted',
+  RRS_REQUEST_REJECTED: 'request.status.rejected',
+  RRS_REQUEST_CANCELLED: 'request.status.cancelled',
 
   /* Booking Meta Statuses */
   BMS_PENDING_START: 'Pending Booking Start',

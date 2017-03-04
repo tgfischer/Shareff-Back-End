@@ -47,13 +47,23 @@ router.post('/cancel_request', isLoggedIn, ({body}, res) => {
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
     // First, double check that this user even owns that request ID
-    client.query('SELECT COUNT(*) AS "numRequests" FROM "rentRequest" WHERE "requestId"=$1 AND "renterId"=$2 LIMIT 1', [requestId, userId]).then(({rows}) => {
+    client.query('SELECT status AS "numRequests" FROM "rentRequest" WHERE "requestId"=$1 AND "renterId"=$2 LIMIT 1', [requestId, userId]).then(({rows}) => {
       // If there is not a request with that ID and renter, throw an unauthorized error
       if (rows.length < 1) {
         client.release();
         return res.status(404).json({
           err: {
             message: nls.UNAUTHORIZED
+          }
+        });
+      }
+
+      // Double check that the request has not been approved or cancelled already
+      if (rows[0].status === 'request.status.accepted' || rows[0].status === 'request.status.cancelled') {
+        client.release();
+        return res.status(500).json({
+          err: {
+            message: nls.GENERIC_ERROR_MESSAGE
           }
         });
       }
