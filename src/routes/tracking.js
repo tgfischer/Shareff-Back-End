@@ -15,6 +15,7 @@ import {chargeRenter, payOwner} from '../utils/Payments';
 
 const router = express.Router();
 const moment = extendMoment(Moment);        // create a moment object with more capability (such as date ranges)
+
 /*
 ALTER TABLE public.booking ADD COLUMN "metaStatus" varchar(50);
 ALTER TABLE public.booking ADD COLUMN "status" varchar(30);
@@ -130,6 +131,8 @@ const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
                     continue;   // If the booking is already complete, move on to the next booking
                 }
 
+                /* Need to change the condition here to not look at the start confirmation sent. Change the status right away
+                instead of 15 minutes past */
                 if (status == nls.BOOKING_PENDING && metaStatus == nls.BMS_START_CONF_SENT) {
                     updateBookingStatus(nls.BOOKING_ACTIVE, booking.bookingId);
 
