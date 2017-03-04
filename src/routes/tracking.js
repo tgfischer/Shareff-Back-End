@@ -10,7 +10,7 @@ import {
 import {
     getNotificationLevel
 } from '../utils/Utils';
-import {chargeRenter, payOwner} from '../utils/Payments';
+import {completeTransaction} from '../utils/Payments';
 
 
 const router = express.Router();
@@ -35,7 +35,7 @@ ALTER TABLE public.booking ADD COLUMN "status" varchar(30);
 
 // The following job will be called every 5 minutes! -- Thanks StackOverflow
 let timeRule = new schedule.RecurrenceRule();
-timeRule.minute = new schedule.Range(0, 59, 5);
+timeRule.minute = new schedule.Range(0, 59, 1);
 
 const timeBeforeBooking = 1;    // This value is 1 hour before
 const timeAfterBooking = -0.25; // This value is 15 minutes after
@@ -125,7 +125,9 @@ const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
                 const metaStatus = booking.metaStatus;
                 const ownerId = booking.ownerId;
                 const renterId = booking.userId;
-                const amount = '10';
+                const amount = booking.totalCost*100; // amount in cents
+
+                completeTransaction(renterId, amount);
 
                 if (status == nls.BOOKING_COMPLETE) {
                     continue;   // If the booking is already complete, move on to the next booking
@@ -138,8 +140,6 @@ const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
 
                 } else if (status == nls.BOOKING_ACTIVE && metaStatus == nls.BMS_END_CONF_SENT) {
                     updateBookingStatus(nls.BOOKING_COMPLETE, booking.bookingId);
-                    chargeRenter(renterId, amount);
-                    payOwner(ownerId, amount);
                 }
             }
 
