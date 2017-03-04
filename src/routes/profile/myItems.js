@@ -60,15 +60,15 @@ router.post('/remove_my_item', isLoggedIn, (req, res) => {
  */
 router.post('/update_my_item', isLoggedIn, (req, res) => {
   // Get the itemId and ownerId from the request
-  const {title, category, price, costPeriod, description, terms, itemId, userId} = req.body;
+  const {title, category, price, costPeriod, description, terms, itemId, userId, photos} = req.body;
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
     const query = 'UPDATE "rentalItem" \
-                    SET "title"=$1, "description"=$2, "price"=$3, "costPeriod"=$4, "termsOfUse"=$5, "category"=$6 \
-                    WHERE "itemId"=$7 AND "ownerId"=$8';
+                    SET "title"=$1, "description"=$2, "price"=$3, "costPeriod"=$4, "termsOfUse"=$5, "category"=$6, "photos"=$7 \
+                    WHERE "itemId"=$8 AND "ownerId"=$9';
 
-    client.query(query, [title, description, price, costPeriod, terms, category, itemId, userId]).then(result => {
+    client.query(query, [title, description, price, costPeriod, terms, category, photos, itemId, userId]).then(result => {
       client.release();
       res.status(200).json({result});
     }).catch(err => {
