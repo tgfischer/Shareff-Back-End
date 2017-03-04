@@ -29,7 +29,7 @@ router.post('/get_booking_info', (req, res) => {
      *      - Rental item info such as photo, title
      */
     pool.connect().then(client => {
-        const bookingAndItemInfo = `SELECT "booking".*, "rentalItem".* \
+        const bookingAndItemInfo = `SELECT "booking".*, "rentalItem"."itemId", "rentalItem"."title", "rentalItem"."description", "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."category", "rentalItem"."photos" \
                                     FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId"="rentalItem"."itemId" \
                                     WHERE "booking"."bookingId"=$1;`;
         client.query(bookingAndItemInfo, [bookingId]).then(result => {
@@ -53,12 +53,13 @@ router.post('/get_booking_info', (req, res) => {
                             status: booking.status
                         }, 
                         rentalItem: {
+                            itemId: booking.itemId,
                             title: booking.title,
                             description: booking.description,
                             price: booking.price,
                             costPeriod: booking.costPeriod,
                             category: booking.category,
-                            photo: booking.photo
+                            photos: booking.photos
                         },
                         renter: {
                             userId: renter.userId,
