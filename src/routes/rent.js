@@ -158,20 +158,15 @@ router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
             }
 
             // Update the rent request in the database 
-            pool.connect().then(client => {
-                const updateQuery = `UPDATE public."rentRequest" SET "status"=$1 WHERE "requestId"=$2;`;
-                client.query(updateQuery, [newStatus, requestId]).then(updateResult => {
-                    client.release();
+            updateRentRequest(newStatus, requestId).then(result => {
+                // Get the new updated set of incoming requests to return to the client
+                getIncomingRequests(req.body.userId).then(requests => {
+                    res.status(200).json({requests});
                 }).catch(err => {
-                    client.release();
+                    console.log("An error occurred while getting incoming requests");
+                    res.status(500).json({err});
                 });
-            });
-            
-            // Get the new updated set of incoming requests to return to the client
-            getIncomingRequests(req.body.userId).then(requests => {
-                res.status(200).json({requests});
             }).catch(err => {
-                console.log("An error occurred while getting incoming requests");
                 res.status(500).json({err});
             });
         }).catch(err => {
@@ -240,6 +235,21 @@ router.post('/request/force_update_status', isLoggedIn, (req, res) => {
         }
     }
 });
+
+const updateRentRequest = (newStatus, requestId) => {
+    return new Promise((resolve, reject) => {
+        pool.connect().then(client => {
+            const updateQuery = `UPDATE public."rentRequest" SET "status"=$1 WHERE "requestId"=$2;`;
+            client.query(updateQuery, [newStatus, requestId]).then(updateResult => {
+                client.release();
+                return resolve(updateResult);
+            }).catch(err => {
+                client.release();
+                return reject(err);
+            });
+        });
+    });
+};
 
 const getRentRequest = (requestId) => {
     return new Promise((resolve, reject) => {

@@ -127,12 +127,14 @@ const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
                     continue;   // If the booking is already complete, move on to the next booking
                 }
 
+                /* Need to change the condition here to not look at the start confirmation sent. Change the status right away
+                instead of 15 minutes past */
                 if (status == nls.BOOKING_PENDING && metaStatus == nls.BMS_START_CONF_SENT) {
                     updateBookingStatus(nls.BOOKING_ACTIVE, booking.bookingId);
 
                 } else if (status == nls.BOOKING_ACTIVE && metaStatus == nls.BMS_END_CONF_SENT) {
                     updateBookingStatus(nls.BOOKING_COMPLETE, booking.bookingId);
-
+                    
                 } 
             }
 
