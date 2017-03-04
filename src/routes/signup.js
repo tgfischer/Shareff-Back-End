@@ -55,16 +55,50 @@ router.post('/', isLoggedOut, (req, res) => {
                 //create a managed account for receiving payments
                 stripe.accounts.create({
                   country: "CA",
-                  managed: true
+                  managed: true,
+                  external_account: {
+                    object: 'bank_account',
+                    currency: 'cad',
+                    country: 'CA',
+                    account_holder_name: 'dvdapp',
+                    account_number: "000123456789",
+                    routing_number: "11000-000"
+                  }
                 }).then(account => {
-                  console.log(account);
-                  const ccBrand = customer.default_source.brand;
-                  const ccLast4Digits = customer.default_source.last4;
+                  stripe.accounts.update(account.id, {
+                    legal_entity: {
+                      dob: {
+                        day: 27,
+                        month: 4,
+                        year: 1994
+                      },
+                      address: {
+                        city,
+                        line1: addressOne,
+                        postal_code: postalCode,
+                        state: province
+                      },
+                      first_name: firstName,
+                      last_name: lastName,
+                      type: "individual"
+                    },
+                    tos_acceptance: {
+                      date: Math.floor(Date.now() / 1000),
+                      ip: req.connection.remoteAddress // only if no proxy
+                    }
+                  }).then(account => {
+                    console.log(account);
+                  }).catch(err => {
+                    console.log(err);
+                  });
+                  const ccBrand = customer.sources.data[0].brand;
+                  const ccLast4Digits = customer.sources.data[0].last4;
                   const stripeAccountId = account.id;
                   // Build the query to insert the user
-                  query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "stripeCustomerId", "ccExpiryDate", "ccLast4Digits", "ccBrand", "stripeAccountId") \
-                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) \
-                            RETURNING "userId", "photoUrl"`;
+                  query = `INSERT INTO "userTable" ("firstName", "lastName", "email", "password", "stripeCustomerId", \
+                                              "ccExpiryDate", "ccLast4Digits", "ccBrand", "stripeAccountId") \
+                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) \
+                          RETURNING "userId", "photoUrl"`;
 
                   // Insert the user into the users table
                   client.query(query, [firstName, lastName, email, hash, customer.id, expiryDate, ccLast4Digits, ccBrand, stripeAccountId]).then(result => {
@@ -121,16 +155,17 @@ router.post('/', isLoggedOut, (req, res) => {
                       });
                     });
                   }).catch(err => {
+                    console.log(err);
                     rollBack(err, client, res, stripe, customer);
                   });
                 }).catch(err => {
                   rollBack(err, client, res, stripe, customer);
-                })
+                });
               }).catch(err => {
                 rollBack(err, client, res, stripe, customer);
               });
             }).catch(err => {
-              rollBack(err, client, res, stripe, customer);
+              rollBack(err, client, res);
             });
           }).catch(err => {
             rollBack(err, client, res);

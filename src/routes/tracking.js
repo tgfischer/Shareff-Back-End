@@ -125,9 +125,10 @@ const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
                 const metaStatus = booking.metaStatus;
                 const ownerId = booking.ownerId;
                 const renterId = booking.userId;
-                const amount = booking.totalCost*100; // amount in cents
+                // round to 2 decimal spots and save amount in cents
+                const amount = Math.trunc(booking.totalCost * 100);
 
-                completeTransaction(renterId, amount);
+                completeTransaction(renterId, ownerId, amount);
 
                 if (status == nls.BOOKING_COMPLETE) {
                     continue;   // If the booking is already complete, move on to the next booking
