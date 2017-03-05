@@ -205,7 +205,7 @@ router.post('/submit_review', (req, res) => {
 });
 
 router.post('/submit_confirmation', (req, res) => {
-
+    // To be implemented soon.. 
 });
 
 export {router as booking}
