@@ -4,7 +4,10 @@ import {extendMoment} from 'moment-range';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
 import {rollback, isLoggedIn, getIncomingRequests, calculatePrice} from '../utils/Utils';
-import {sendRentRequestNotification} from '../utils/EmailNotification';
+import {
+    sendRentRequestNotification,
+    sendRentRequestStatusChangeNotification
+} from '../utils/EmailNotification';
 
 const router = express.Router();
 const moment = extendMoment(Moment);
@@ -140,9 +143,11 @@ router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
             case nls.RRS_REQUEST_PENDING:
                 if (approved === true) {
                     newStatus = nls.RRS_REQUEST_ACCEPTED;
-                    book(request); // Create a booking in the db
+                    createBooking(rentRequest.rows[0]); // Create a booking in the db
+                    sendRentRequestStatusChangeNotification(rentRequest.rows[0], newStatus);
                 } else if (approved === false) {
                     newStatus = nls.RRS_REQUEST_REJECTED;
+                    sendRentRequestStatusChangeNotification(rentRequest.rows[0], newStatus);
                 } else {
                     // The status is pending, and an approval was not specified. Keep it the same.
                     newStatus = status;
@@ -243,7 +248,22 @@ const updateRentRequest = (newStatus, requestId) => {
     });
 };
 
-const book = (rentRequest) => {
+const getRentRequest = (requestId) => {
+    return new Promise((resolve, reject) => {
+        pool.connect().then(client => { 
+            const query = 'SELECT * FROM public."rentRequest" WHERE "requestId"=$1;';
+            client.query(query, [requestId]).then(result => {
+                client.release();
+                return resolve(result);
+            }).catch(err => {
+                client.release();
+                return reject(err);
+            });
+        });
+    });
+};
+
+const createBooking = (rentRequest) => {
     console.log("Attempting to create a booking with: " + JSON.stringify(rentRequest, null, 2));
     pool.connect().then(client => {
       // get the price of the rental item first

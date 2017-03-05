@@ -9,7 +9,9 @@ import {
     getRenterStartConfirmationNotificationTemplate,
     getRenterEndConfirmationNotificationTemplate,
     getOwnerStartConfirmationNotificationTemplate,
-    getOwnerEndConfirmationNotificationTemplate
+    getOwnerEndConfirmationNotificationTemplate,
+    getRentRequestAcceptedNotificationTemplate,
+    getRentRequestRejectedNotificationTemplate
 } from '../templates/emails';
 import nodemailer from 'nodemailer';
 
@@ -225,5 +227,49 @@ export const sendRentRequestNotification = (newRentRequest) => {
             client.release();
             console.log(err);
         });
+    });
+};
+
+// Rent Request Accepted/Rejected
+/**
+ * Assume that the rent request status has not already been updated in the database. 
+ * 
+ * i.e. After it changes to Accepted, it will be updated in the database and then sent here. Therefore send update with the status that it is going to be changed to.
+ */
+export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) => {
+    pool.connect().then(client => {
+        const getRenterQuery = `SELECT "email", "firstName" FROM public."userTable" WHERE "userId"=$1;`;
+        client.query(getRenterQuery, [rentRequest.renterId]).then(renter => {
+            const getItemTitle = `SELECT "title" FROM public."rentalItem" WHERE "itemId"=$1`;
+            client.query(getItemTitle, [rentRequest.itemId]).then(itemTitle => {
+                client.release();
+                console.log(renter.rows[0].firstName, itemTitle.rows[0].title)
+                let emailSubject, htmlTemplate;
+                if (newStatus === nls.RRS_REQUEST_ACCEPTED) {
+                    emailSubject = nls.RENT_REQUEST_ACCEPTED;
+                    htmlTemplate = getRentRequestAcceptedNotificationTemplate(renter.rows[0].firstName, itemTitle.rows[0].title);
+                } else if (newStatus === nls.RRS_REQUEST_REJECTED) {
+                    emailSubject = nls.RENT_REQUEST_REJECTED; 
+                    htmlTemplate = getRentRequestRejectedNotificationTemplate(renter.rows[0].firstName, itemTitle.rows[0].title);
+                }
+
+                
+                if (emailSubject && htmlTemplate) {
+                    console.log("Send mail" + renter.rows[0].email);
+                    sendMail({
+                        from : nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+                        to : renter.rows[0].email,
+                        subject : emailSubject,
+                        html : htmlTemplate
+                    });
+                }                
+            });
+        }).catch(err => {
+            client.release();
+            console.log("Error sending rent request status change notification: " + err);  
+        });
+    }).catch(err => {
+        client.release();
+        console.log("Error sending rent request status change notification: " + err);        
     });
 };

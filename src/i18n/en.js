@@ -43,6 +43,8 @@ export const nls = {
   SHAREFF_CONFIRMATION: 'Shareff Confirmation',
 
   RENT_REQUEST_MADE: '[Shareff - Rent Request] A Rent Request has been made for your item!',
+  RENT_REQUEST_ACCEPTED: '[Shareff - Rent Request] Your rent request has been approved!',
+  RENT_REQUEST_REJECTED: '[Shareff - Rent Request] Your rent request was rejected',
   RENTER_BOOKING_START_REMINDER: '[Shareff - Booking Reminder] Your rental booking begins soon!',
   OWNER_BOOKING_START_REMINDER: '[Shareff - Booking Reminder] Your item is being rented soon!',
   RENTER_BOOKING_END_REMINDER: '[Shareff - Booking Reminder] Your rental item must be returned soon!',
