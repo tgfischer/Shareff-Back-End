@@ -202,11 +202,9 @@ export const sendEndConfirmations = (booking) => {
 
 // Rent Request Notification
 export const sendRentRequestNotification = (newRentRequest) => {
-    console.log("New rent request: " + JSON.stringify(newRentRequest, null, 2));
     pool.connect().then(client => {
         const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" WHERE "rentalItem"."itemId" = $1;`;
         client.query(query, [newRentRequest.itemId]).then(result => {
-            console.log("The result is: " + JSON.stringify(result, null, 2));
             // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner. 
             sendMail({ 
                 from :  nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
