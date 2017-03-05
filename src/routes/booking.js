@@ -29,57 +29,34 @@ router.post('/get_booking_info', (req, res) => {
      *      - Rental item info such as photo, title
      */
     pool.connect().then(client => {
-        const bookingAndItemInfo = `SELECT "booking".*, "rentalItem"."itemId", "rentalItem"."title", "rentalItem"."description", "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."category", "rentalItem"."photos" \
+        const bookingAndItemInfo = `SELECT "booking".*, "rentalItem"."itemId", "rentalItem"."title", "rentalItem"."photos" \
                                     FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId"="rentalItem"."itemId" \
                                     WHERE "booking"."bookingId"=$1;`;
         client.query(bookingAndItemInfo, [bookingId]).then(result => {
             const booking = result.rows[0];
             const renterInfo = `SELECT * FROM public."userTable" WHERE "userId"=$1;`;
             client.query(renterInfo, [booking.userId]).then(renterRes => {
-                const renter = renterRes.rows[0];
+                let renter = renterRes.rows[0];
+                renter.rating = null;   // This is default null value for the rating they have provided this booking
                 const ownerInfo = `SELECT "userTable".* \
                                     FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" \
                                     WHERE "rentalItem"."itemId" = $1;`;
                 client.query(ownerInfo, [booking.itemId]).then(ownerRes => {
-                    client.release();
-                    const owner = ownerRes.rows[0];
-                    
-                    // Now, build the official response object: 
-                    const resObj = {
-                        booking: {
-                            bookingId: booking.bookingId,
-                            startDate: booking.startDate,
-                            endDate: booking.endDate,
-                            status: booking.status
-                        }, 
-                        rentalItem: {
-                            itemId: booking.itemId,
-                            title: booking.title,
-                            description: booking.description,
-                            price: booking.price,
-                            costPeriod: booking.costPeriod,
-                            category: booking.category,
-                            photos: booking.photos
-                        },
-                        renter: {
-                            userId: renter.userId,
-                            firstName: renter.firstName,
-                            lastName: renter.lastName,
-                            email: renter.email,
-                            photoUrl: renter.photoUrl,
-                            avgRating: renter.avgRating
-                        },
-                        owner: {
-                            userId: owner.userId,
-                            firstName: owner.firstName,
-                            lastName: owner.lastName,
-                            email: owner.email,
-                            photoUrl: owner.photoUrl,
-                            avgRating: owner.avgRating
-                        }
-                    };
-                    res.status(200).json({bookingInfo: resObj});
-
+                    let owner = ownerRes.rows[0];
+                    owner.rating = null;
+                    const ratingsQuery = `SELECT * FROM public."userReview" WHERE "bookingId"=$1;`;
+                    client.query(ratingsQuery, [bookingId]).then(ratingsRes => {
+                        client.release();
+                        const ratings = ratingsRes.rows;
+                        gatherAllBookingInfo(booking, renter, owner, ratings).then(resObj => {
+                            console.log(resObj);
+                            res.status(200).json({bookingInfo: resObj});
+                        });
+                    }).catch(err => {
+                        console.log(err);
+                        client.release();
+                        res.status(500).json({err});  
+                    });
                 }).catch(err => {
                     console.log(err);
                     client.release();
@@ -99,6 +76,35 @@ router.post('/get_booking_info', (req, res) => {
 
 });
 
+const gatherAllBookingInfo = (booking, renter, owner, ratings) => {
+    return new Promise((resolve, reject) => {
+        for (let rating of ratings) {
+            if (rating.userIdFrom === renter.userId) {
+                renter.rating = rating.rating;
+            } else if (rating.userIdFrom === owner.userId) {
+                owner.rating = rating.rating;
+            }
+        }
+        const resObj = {
+            booking: {
+                bookingId: booking.bookingId,
+                startDate: booking.startDate,
+                endDate: booking.endDate,
+                status: booking.status, 
+                totalCost: booking.totalCost
+            }, 
+            rentalItem: {
+                itemId: booking.itemId,
+                title: booking.title,
+                photos: booking.photos
+            },
+            owner: owner,
+            renter: renter
+        };
+        return resolve(resObj);
+    });
+};
+
 
 /**
  *  The following route will be used to rate the opposite user based on the booking
@@ -114,7 +120,9 @@ router.post('/get_booking_info', (req, res) => {
  * 
  */ 
 router.post('/submit_review', (req, res) => {
+    console.log("Submitting review");
     if (!req.body.bookingId || !req.body.ratingUserId || !req.body.rating) {
+        console.log("Data is not right");
         res.status(500).json({
             err: {
                 message: nls.INVALID_PARAMETER_SET
@@ -153,7 +161,7 @@ router.post('/submit_review', (req, res) => {
                 if (req.body.title && req.body.comments) {
                     // 1. Inserting with a title and comments
                     const insQuery = `INSERT INTO public."userReview" ("title", "comments", "userIdFor", "userIdFrom", "rating", "creationTime", "bookingId") \
-                                        VALUES($1, $2, $3, $4, $5, $6);`;
+                                        VALUES($1, $2, $3, $4, $5, $6, $7);`;
                     client.query(insQuery, [req.body.title, req.body.comments, userIdFor, userIdFrom, req.body.rating, moment(), req.body.bookingId]).then(insResult => {
                         client.release();
 
@@ -170,9 +178,9 @@ router.post('/submit_review', (req, res) => {
                     });
                 } else {
                     // 2. Inserting without a title and comments
-                    const insQuery = `INSERT INTO public."userReview" ("userIdFor", "userIdFrom", "rating", "creationTime") \
-                                        VALUES($1, $2, $3, $4);`;
-                    client.query(insQuery, [userIdFor, userIdFrom, req.body.rating, moment()]).then(insResult => {
+                    const insQuery = `INSERT INTO public."userReview" ("userIdFor", "userIdFrom", "rating", "creationTime", "bookingId") \
+                                        VALUES($1, $2, $3, $4, $5);`;
+                    client.query(insQuery, [userIdFor, userIdFrom, req.body.rating, moment(), req.body.bookingId]).then(insResult => {
                         client.release();
 
                         // Async call to update the rating value associated with each user
@@ -194,6 +202,10 @@ router.post('/submit_review', (req, res) => {
             });
         });
     }
+});
+
+router.post('/submit_confirmation', (req, res) => {
+
 });
 
 export {router as booking}
