@@ -294,6 +294,7 @@ export const convertDate = (date) => {
    const expDate = {
     month: expDateFull.getMonth()+1, //getMonth is 0 indexed
     year: expDateFull.getFullYear(),
+    day: expDateFull.getDate()
    }
 
    return expDate;
