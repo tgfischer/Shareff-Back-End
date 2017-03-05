@@ -7,6 +7,7 @@ import path from 'path';
 import {nls} from '../i18n/en';
 import {pool} from '../app';
 import stripeWrapper from 'stripe';
+import moment from 'moment';
 
 /**
  * This function generates the thumbnail path for images
@@ -293,20 +294,38 @@ export const convertDate = (date) => {
    const expDate = {
     month: expDateFull.getMonth()+1, //getMonth is 0 indexed
     year: expDateFull.getFullYear(),
+    day: expDateFull.getDate()
    }
 
    return expDate;
 }
 
-/** 
+/**
+ * Calcualte the total cost of a rent request
+ * @param startDate
+ *   the start date of a request
+ * @param endDate
+ *   the end date of a request
+ * @param price
+ *   the price of a request
+ */
+ export const calculatePrice = (startDate, endDate, price) => {
+   const start = moment(startDate);
+   const end = moment(endDate);
+   const duration = moment.duration(end.diff(start)).asDays();
+   const totalPrice = (duration * price).toFixed(2);
+   return totalPrice;
+ }
+
+/**
  * Update the average rating value of a specified user to include a new rating
  */
-export const updateAverageRating = (userId) => { 
+export const updateAverageRating = (userId) => {
   pool.connect().then(client => {
     const query = `SELECT "rating" FROM public."userReview" WHERE "userIdFor"=$1;`;
     client.query(query, [userId]).then(result => {
       const ratings = result.rows;
-      const size = ratings.length; 
+      const size = ratings.length;
 
       let average = 0;
       for (let i = 0; i < size; i++) {
