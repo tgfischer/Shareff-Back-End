@@ -47,7 +47,7 @@ export const completeTransaction = (renterId, ownerId, amount) => {
 }
 
 export const updateBankAccount = (bankInfo, stripeAccountId, userId) => {
-  let promise = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let {accountHolderName, accountNumber, transitNumber, institutionNumber} = bankInfo;
     const {firstName, lastName, line1, postalCode, province, dob, city, ip} = bankInfo;
 
@@ -134,12 +134,10 @@ export const updateBankAccount = (bankInfo, stripeAccountId, userId) => {
       resolve(true);
     }
   });
-
-  return promise;
 }
 
 export const updateCreditCard = (ccInfo, stripeCustomerId, userId) => {
-  let promise = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     let {ccn, cvn, expiryDate, email} = ccInfo;
 
     // user didnt fill out credit card info, just return
@@ -257,6 +255,4 @@ export const updateCreditCard = (ccInfo, stripeCustomerId, userId) => {
       });
     }
   });
-
-  return promise;
 }
