@@ -128,8 +128,6 @@ const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
                 // round to 2 decimal spots and save amount in cents
                 const amount = Math.trunc(booking.totalCost * 100);
 
-                completeTransaction(renterId, ownerId, amount);
-
                 if (status == nls.BOOKING_COMPLETE) {
                     continue;   // If the booking is already complete, move on to the next booking
                 }
@@ -141,6 +139,7 @@ const updateBookingStatuses = schedule.scheduleJob(timeRule, () => {
 
                 } else if (status == nls.BOOKING_ACTIVE && metaStatus == nls.BMS_END_CONF_SENT) {
                     updateBookingStatus(nls.BOOKING_COMPLETE, booking.bookingId);
+                    completeTransaction(renterId, ownerId, amount);
                 }
             }
 
