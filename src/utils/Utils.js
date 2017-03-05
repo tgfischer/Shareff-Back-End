@@ -335,7 +335,7 @@ export const getIncomingRequests = (userId) => {
                             "rentalItem"."title" AS "itemTitle", concat_ws(\' \', "userTable"."firstName", "userTable"."lastName") AS "rentersName" \
                       FROM ("rentalItem" INNER JOIN "rentRequest" ON "rentalItem"."itemId"="rentRequest"."itemId") \
                             INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
-                      WHERE "rentalItem"."ownerId"=$1 AND "rentRequest"."status"=$2';
+                      WHERE "rentalItem"."ownerId"=$1 AND "rentRequest"."status"=$2;';
 
       client.query(query, [userId, nls.RRS_REQUEST_PENDING]).then(result => {
         client.release();
