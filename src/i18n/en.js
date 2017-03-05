@@ -1,5 +1,5 @@
 // TODO: Move these messages to the client-side, and return the key
-// e.g. GENERAL_ERROR_MESSAGE: 'error.general'
+// e.g. GENERIC_ERROR_MESSAGE: 'error.general'
 export const nls = {
   SERVER_STARTED: 'Server listening on port',
   PRODUCTION_MODE: '>>> Production Mode',
@@ -18,29 +18,30 @@ export const nls = {
   /* Miscellaneous Message */
   MOMENT_DATE_FORMAT: 'YYYY-MM-DD',
 
-  /* Rent Request Statuses */ 
-  RRS_NOTIFICATION_PENDING: 'Notification pending', 
-  RRS_REQUEST_PENDING: 'Pending', 
-  RRS_REQUEST_ACCEPTED: 'Accepted',
-  RRS_REQUEST_REJECTED: 'Rejected', 
+  /* Rent Request Statuses */
+  RRS_NOTIFICATION_PENDING: 'request.status.notificationPending',
+  RRS_REQUEST_PENDING: 'request.status.pending',
+  RRS_REQUEST_ACCEPTED: 'request.status.accepted',
+  RRS_REQUEST_REJECTED: 'request.status.rejected',
+  RRS_REQUEST_CANCELLED: 'request.status.cancelled',
 
-  /* Booking Meta Statuses */ 
+  /* Booking Meta Statuses */
   BMS_PENDING_START: 'Pending Booking Start',
   BMS_START_REM_SENT: 'Start Reminder Sent',
   BMS_START_CONF_SENT: 'Start Confirmation Sent',
   BMS_END_REM_SENT: 'End Reminder Sent',
   BMS_END_CONF_SENT: 'End Confirmation Sent',
 
-  /* Booking Statuses */ 
+  /* Booking Statuses */
   BOOKING_PENDING: 'Booking Pending',
   BOOKING_ACTIVE: 'Booking Active',
   BOOKING_COMPLETE: 'Booking Complete',
 
-  /* Email Notification Subject Lines */ 
-  SHAREFF_ALERTS: 'Shareff Alerts', 
+  /* Email Notification Subject Lines */
+  SHAREFF_ALERTS: 'Shareff Alerts',
   SHAREFF_REMINDERS: 'Shareff Reminders',
-  SHAREFF_CONFIRMATION: 'Shareff Confirmation', 
-  
+  SHAREFF_CONFIRMATION: 'Shareff Confirmation',
+
   RENT_REQUEST_MADE: '[Shareff - Rent Request] A Rent Request has been made for your item!',
   RENTER_BOOKING_START_REMINDER: '[Shareff - Booking Reminder] Your rental booking begins soon!',
   OWNER_BOOKING_START_REMINDER: '[Shareff - Booking Reminder] Your item is being rented soon!',
@@ -49,7 +50,7 @@ export const nls = {
   RENTER_BOOKING_START_CONFIRMATION: '[Shareff - Item Confirmation] Was your rental item delivered?',
   OWNER_BOOKING_START_CONFIRMATION: '[Shareff - Item Confirmation] Did you deliver your item?',
   RENTER_BOOKING_END_CONFIRMATION: '[Shareff - Item Confirmation] Did you return your rental item?',
-  OWNER_BOOKING_END_CONFIRMATION: '[Shareff - Item Confirmation] Was your item returned?', 
+  OWNER_BOOKING_END_CONFIRMATION: '[Shareff - Item Confirmation] Was your item returned?',
   RENTER_BOOKING_RATING: '[Shareff - Booking Rating] Please review your renting experience!',
   OWNER_BOOKING_RATING: '[Shareff - Booking Rating] Please review your renting experience!' //TODO: Change this to something better
 };

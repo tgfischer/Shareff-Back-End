@@ -77,7 +77,7 @@ router.post('/get_rental_item', (req, res) => {
           err: {
             message: nls.ITEM_NOT_FOUND
           }
-        })
+        });
       }
 
       // Get the rental item and the owner ID
