@@ -36,6 +36,70 @@ export const getRentRequestNotificationTemplate = (firstName, itemTitle) => {
     </html>`;
 };
 
+// Template for the email sent to the renter when their rent request was accepted
+export const getRentRequestAcceptedNotificationTemplate = (firstName, itemTitle) => {
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> We are pleased to inform you that your request to rent the item, <b>"${itemTitle}"</b> has been approved! Please head over to Shareff to view the item booking. </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
+};
+// Template for the email sent to the renter when their rent request was rejected receive a rent request
+export const getRentRequestRejectedNotificationTemplate = (firstName, itemTitle) => {
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> We regret to inform you that your request to rent the item, <b>"${itemTitle}"</b> has been rejected. Please head over to Shareff to search for more items to rent! </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
+};
 /* --------------------------------------------------- REMINDER/CONFIRMATION EMAIL TEMPLATES --------------------------------------------------- */
 // Template sent to the renter to remind them that their rental booking will start soon
 export const getRenterStartReminderNotificationTemplate = (firstName, itemTitle, startDate) => {
