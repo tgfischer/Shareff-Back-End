@@ -127,7 +127,6 @@ router.post('/request', isLoggedIn, (req, res) => {
  */
 router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
     const {request, approved, userId} = req.body;
-    console.log(request);
     if (!request || approved === undefined || !userId) {
         res.status(500).json({
             err: {
