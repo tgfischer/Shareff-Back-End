@@ -32,7 +32,7 @@ ALTER TABLE public.booking ADD COLUMN "status" varchar(30);
 
 // The following job will be called every 5 minutes! -- Thanks StackOverflow
 let timeRule = new schedule.RecurrenceRule();
-timeRule.minute = new schedule.Range(0, 59, 2);
+timeRule.minute = new schedule.Range(0, 59, 5);
 
 const timeBeforeBooking = 1;    // This value is 1 hour before
 const timeAfterBooking = -0.25; // This value is 15 minutes after
