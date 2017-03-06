@@ -32,7 +32,7 @@ ALTER TABLE public.booking ADD COLUMN "status" varchar(30);
 
 // The following job will be called every 5 minutes! -- Thanks StackOverflow
 let timeRule = new schedule.RecurrenceRule();
-timeRule.minute = new schedule.Range(0, 59, 5);
+timeRule.minute = new schedule.Range(0, 59, 1);
 
 const timeBeforeBooking = 1;    // This value is 1 hour before
 const timeAfterBooking = -0.25; // This value is 15 minutes after
@@ -52,10 +52,6 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                 const notificationMetaStatus = booking.metaStatus;
                 const bookingStatus = booking.status;
 
-                if (notificationMetaStatus === nls.BMS_END_CONF_SENT) {
-                    continue;   // If the booking has already ended, then continue to the next booking
-                }
-
                 const now = moment();
                 const start = moment(booking.startDate);
                 const end = moment(booking.endDate);
@@ -65,7 +61,10 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                 const nowToEnd = (moment.duration(end.diff(now))).asHours();
 
                 // Look to send notification emails throughout the course of a booking based on the notificationMetaStatus
-                if (notificationStatus === nls.BMS_END_CONF_SENT) {
+                console.log(nowToStart + " " + nowToEnd);
+
+                if (notificationMetaStatus === nls.BMS_END_CONF_SENT) {
+                    console.log("This booking is over");
                     continue;
 
                 } else if (nowToStart > 0 && nowToStart <= timeBeforeBooking && (notificationMetaStatus === nls.BMS_PENDING_START)) {
@@ -84,7 +83,7 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                     // Update the booking's metaStatus to be "Start Confirmation Sent"
                     updateBookingMetaStatus(nls.BMS_START_CONF_SENT, booking.bookingId);
 
-                } else if (nowToEnd > 0 && nowToEnd <= timeBeforeBooking && (notificationMetaStatus === nls.BMS_START_CONF_SENT)) {
+                } else if (nowToEnd > 0 && nowToEnd <= timeBeforeBooking && (notificationMetaStatus === nls.BMS_START_REM_SENT || notificationMetaStatus === nls.BMS_START_CONF_SENT)) {
                     // Case 3: Need to send a Booking End Reminder
                     console.log("Send End Reminders");
                     sendEndReminders(booking);
@@ -105,7 +104,7 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                 // Look to update the booking status based on the time relative to the booking. Pending until startDate passes, then Active until endDate passes, then Complete.
                 if (bookingStatus === nls.BOOKING_COMPLETE) {
                     continue;
-                    
+
                 } else if (nowToStart <= 0 && (bookingStatus === nls.BOOKING_PENDING)) {
                     updateBookingStatus(nls.BOOKING_ACTIVE, booking.bookingId);
 
