@@ -3,8 +3,11 @@ import Moment from 'moment';
 import {extendMoment} from 'moment-range';
 import {pool} from '../app';
 import {nls} from '../i18n/en';
-import {rollback, isLoggedIn, getIncomingRequests} from '../utils/Utils';
-import {sendRentRequestNotification} from '../utils/EmailNotification';
+import {rollback, isLoggedIn, getIncomingRequests, calculatePrice} from '../utils/Utils';
+import {
+    sendRentRequestNotification,
+    sendRentRequestStatusChangeNotification
+} from '../utils/EmailNotification';
 
 const router = express.Router();
 const moment = extendMoment(Moment);
@@ -64,7 +67,7 @@ router.post('/request', isLoggedIn, (req, res) => {
                                     client.release();
                                     console.log("Sending notification: " + JSON.stringify(insRentReqResult, null, 2));
                                     sendRentRequestNotification(insRentReqResult.rows[0]);
-                                    
+
                                     res.status(200).json({ success: true });
                                 }).catch(err => {
                                     // Catch from commit transaction
@@ -123,54 +126,48 @@ router.post('/request', isLoggedIn, (req, res) => {
  * @return success - boolean
  */
 router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
-    console.log(req.body);
-    const {request, approved, usedId} = req.body;
-
-    if (!request || !approved || !req.body.userId) {
+    const {request, approved, userId} = req.body;
+    if (!request || approved === undefined || !userId) {
         res.status(500).json({
             err: {
                 message: nls.INVALID_PARAMETER_SET
             }
         });
     } else {
-        const {requestId} = request;
-        getRentRequest(requestId).then(rentRequest => {
-            const status = rentRequest.rows[0].status;
-            let newStatus;
-            switch (status) {
-                case nls.RRS_NOTIFICATION_PENDING:
-                    newStatus = nls.RRS_REQUEST_PENDING;
-                    break;
-                case nls.RRS_REQUEST_PENDING:
-                    if (approved === true) {
-                        newStatus = nls.RRS_REQUEST_ACCEPTED;
-                        book(rentRequest.rows[0]); // Create a booking in the db
-                    } else if (approved === false) {
-                        newStatus = nls.RRS_REQUEST_REJECTED;
-                    } else {
-                        // The status is pending, and an approval was not specified. Keep it the same.
-                        newStatus = status;
-                    }
-                    break;
-                default:
+        const status = request.status;
+        let newStatus;
+        switch (status) {
+            case nls.RRS_NOTIFICATION_PENDING:
+                newStatus = nls.RRS_REQUEST_PENDING;
+                break;
+            case nls.RRS_REQUEST_PENDING:
+                if (approved === true) {
+                    newStatus = nls.RRS_REQUEST_ACCEPTED;
+                    createBooking(request); // Create a booking in the db
+                    sendRentRequestStatusChangeNotification(request, newStatus);
+                } else if (approved === false) {
+                    newStatus = nls.RRS_REQUEST_REJECTED;
+                    sendRentRequestStatusChangeNotification(request, newStatus);
+                } else {
+                    // The status is pending, and an approval was not specified. Keep it the same.
                     newStatus = status;
-                    break;
-            }
+                }
+                break;
+            default:
+                newStatus = status;
+                break;
+        }
 
-            // Update the rent request in the database 
-            updateRentRequest(newStatus, requestId).then(result => {
-                // Get the new updated set of incoming requests to return to the client
-                getIncomingRequests(req.body.userId).then(requests => {
-                    res.status(200).json({requests});
-                }).catch(err => {
-                    console.log("An error occurred while getting incoming requests");
-                    res.status(500).json({err});
-                });
+        // Update the rent request in the database 
+        updateRentRequest(newStatus, request.requestId).then(result => {
+            // Get the new updated set of incoming requests to return to the client
+            getIncomingRequests(userId).then(requests => {
+                res.status(200).json({requests});
             }).catch(err => {
+                console.log("An error occurred while getting incoming requests");
                 res.status(500).json({err});
             });
         }).catch(err => {
-            console.log("An error occurred while getting rent request." + err);
             res.status(500).json({err});
         });
     }
@@ -266,18 +263,26 @@ const getRentRequest = (requestId) => {
     });
 };
 
-const book = (rentRequest) => {
-    console.log("Attempting to create a booking with: " + JSON.stringify(rentRequest, null, 2));
+const createBooking = (rentRequest) => {
     pool.connect().then(client => {
-        const createBookingQuery = `INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", "status", "metaStatus") VALUES ($1, $2, $3, $4, $5, $6, $7);`;
-        const params = [rentRequest.itemId, rentRequest.requestId, rentRequest.renterId, rentRequest.startDate, rentRequest.endDate, nls.BOOKING_PENDING, nls.BMS_PENDING_START];
+      // get the price of the rental item first
+      const getRentalItemQuery = `SELECT price FROM "public"."rentalItem" WHERE "itemId" = $1`;
+      client.query(getRentalItemQuery, [rentRequest.itemId]).then(result => {
+        const {itemId, requestId, renterId, startDate, endDate} = rentRequest;
+        const price = parseInt(result.rows[0].price);
+        const totalCost = calculatePrice(startDate, endDate, price);
+        const createBookingQuery = `INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", "status", "metaStatus", "totalCost") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
+        const params = [itemId, requestId, renterId, startDate, endDate, nls.BOOKING_PENDING, nls.BMS_PENDING_START, totalCost];
         client.query(createBookingQuery, params).then(result => {
             client.release();
             console.log("Created a booking successfully!");
         }).catch(err => {
             client.release();
-            console.log("An error occurred making a booking.. " + err);  
+            console.log("An error occurred making a booking.. " + err);
         });
+      }).catch(err => {
+        console.log(err);
+      });
     });
 };
 

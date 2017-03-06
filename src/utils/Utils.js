@@ -7,6 +7,7 @@ import path from 'path';
 import {nls} from '../i18n/en';
 import {pool} from '../app';
 import stripeWrapper from 'stripe';
+import moment from 'moment';
 
 /**
  * This function generates the thumbnail path for images
@@ -293,20 +294,38 @@ export const convertDate = (date) => {
    const expDate = {
     month: expDateFull.getMonth()+1, //getMonth is 0 indexed
     year: expDateFull.getFullYear(),
+    day: expDateFull.getDate()
    }
 
    return expDate;
 }
 
-/** 
+/**
+ * Calcualte the total cost of a rent request
+ * @param startDate
+ *   the start date of a request
+ * @param endDate
+ *   the end date of a request
+ * @param price
+ *   the price of a request
+ */
+ export const calculatePrice = (startDate, endDate, price) => {
+   const start = moment(startDate);
+   const end = moment(endDate);
+   const duration = moment.duration(end.diff(start)).asDays();
+   const totalPrice = (duration * price).toFixed(2);
+   return totalPrice;
+ }
+
+/**
  * Update the average rating value of a specified user to include a new rating
  */
-export const updateAverageRating = (userId) => { 
+export const updateAverageRating = (userId) => {
   pool.connect().then(client => {
     const query = `SELECT "rating" FROM public."userReview" WHERE "userIdFor"=$1;`;
     client.query(query, [userId]).then(result => {
       const ratings = result.rows;
-      const size = ratings.length; 
+      const size = ratings.length;
 
       let average = 0;
       for (let i = 0; i < size; i++) {
@@ -328,6 +347,10 @@ export const updateAverageRating = (userId) => {
   });
 };
 
+
+/** 
+ * A method for getting the user's incoming rent requests. Used for the incoming requests page of the user profile, and again after a rent request is accepted/rejected.
+ */
 export const getIncomingRequests = (userId) => {
   return new Promise((resolve, reject) => {
     pool.connect().then(client => {
@@ -335,7 +358,7 @@ export const getIncomingRequests = (userId) => {
                             "rentalItem"."title" AS "itemTitle", concat_ws(\' \', "userTable"."firstName", "userTable"."lastName") AS "rentersName" \
                       FROM ("rentalItem" INNER JOIN "rentRequest" ON "rentalItem"."itemId"="rentRequest"."itemId") \
                             INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
-                      WHERE "rentalItem"."ownerId"=$1 AND "rentRequest"."status"=$2';
+                      WHERE "rentalItem"."ownerId"=$1 AND "rentRequest"."status"=$2;';
 
       client.query(query, [userId, nls.RRS_REQUEST_PENDING]).then(result => {
         client.release();
@@ -354,20 +377,3 @@ export const getIncomingRequests = (userId) => {
     });
   });
 };
-
-export const getNotificationLevel = (metaStatus) => {
-  switch(metaStatus) {
-    case "Pending Status":
-      return 0;
-    case "Start Reminder Sent":
-      return 1;
-    case "Start Confirmation Sent":
-      return 2;
-    case "End Reminder Sent":
-      return 3;
-    case "End Confirmation Sent":
-      return 4;
-    default:
-      return 0;
-  }
-}

@@ -9,7 +9,10 @@ import {
     getRenterStartConfirmationNotificationTemplate,
     getRenterEndConfirmationNotificationTemplate,
     getOwnerStartConfirmationNotificationTemplate,
-    getOwnerEndConfirmationNotificationTemplate
+    getOwnerEndConfirmationNotificationTemplate,
+    getRentRequestAcceptedNotificationTemplate,
+    getRentRequestRejectedNotificationTemplate,
+    getRentRequestExpiredNotificationTemplate
 } from '../templates/emails';
 import nodemailer from 'nodemailer';
 
@@ -200,11 +203,9 @@ export const sendEndConfirmations = (booking) => {
 
 // Rent Request Notification
 export const sendRentRequestNotification = (newRentRequest) => {
-    console.log("New rent request: " + JSON.stringify(newRentRequest, null, 2));
     pool.connect().then(client => {
         const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" WHERE "rentalItem"."itemId" = $1;`;
         client.query(query, [newRentRequest.itemId]).then(result => {
-            console.log("The result is: " + JSON.stringify(result, null, 2));
             // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner. 
             sendMail({ 
                 from :  nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
@@ -230,7 +231,73 @@ export const sendRentRequestNotification = (newRentRequest) => {
     });
 };
 
-// User Rating Notification 
-export const sendRatingNotification = () => {
-
+const getRentRequestRenter = (rentRequest) => {
+    return new Promise((resolve, reject) => {
+        pool.connect().then(client => {
+            const getRenterQuery = `SELECT "email", "firstName" FROM public."userTable" WHERE "renterId"=$1;`;
+            client.query(getRenterQuery, [booking.userId]).then(renter => {
+                const getItemTitle = `SELECT "title" FROM public."rentalItem" WHERE "itemId"=$1`;
+                client.query(getItemTitle, [booking.itemId]).then(itemTitle => {
+                    client.release();
+                    return resolve([renter.rows[0], itemTitle.rows[0]]);
+                });
+            });
+        }).catch(err => {
+            client.release();
+            return reject(err);
+        });
+    });
 };
+
+// Rent Request Accepted/Rejected
+/**
+ * Assume that the rent request status has not already been updated in the database. 
+ * 
+ * i.e. After it changes to Accepted, it will be updated in the database and then sent here. Therefore send update with the status that it is going to be changed to.
+ */
+export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) => {
+    getRentRequestRenter(rentRequest).then(returnArr => {
+        const renter = returnArr[0];
+        const title = returnArr[1].title;
+
+        let emailSubject, htmlTemplate;
+        if (newStatus === nls.RRS_REQUEST_ACCEPTED) {
+            emailSubject = nls.RENT_REQUEST_ACCEPTED;
+            htmlTemplate = getRentRequestAcceptedNotificationTemplate(renter.firstName, title);
+        } else if (newStatus === nls.RRS_REQUEST_REJECTED) {
+            emailSubject = nls.RENT_REQUEST_REJECTED; 
+            htmlTemplate = getRentRequestRejectedNotificationTemplate(renter.firstName, title);
+        }
+
+        
+        if (emailSubject && htmlTemplate) {
+            console.log("Send mail" + renter.rows[0].email);
+            sendMail({
+                from : nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+                to : renter.email,
+                subject : emailSubject,
+                html : htmlTemplate
+            });
+        }       
+    }).catch(err => {   
+        console.log("Error getting rent request renter");  
+    });
+};
+
+// Rent Request Expired
+/**
+ * The following function is used to send an email notification when the rent request has expired!
+ */
+export const sendRentRequestExpiredNotification = (rentRequest) => {
+    getRentRequestRenter(rentRequest).then(returnArr => {
+        const renter = returnArr[0];
+        const title = returnArr[1].title;
+
+        sendMail({
+            from : nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
+            to : renter.email,
+            subject : nls.RENT_REQUEST_EXPIRED,
+            html : getRentRequestExpiredNotificationTemplate(renter.firstName, title)
+        });
+    });
+}
