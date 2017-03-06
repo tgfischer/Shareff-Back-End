@@ -347,6 +347,10 @@ export const updateAverageRating = (userId) => {
   });
 };
 
+
+/** 
+ * A method for getting the user's incoming rent requests. Used for the incoming requests page of the user profile, and again after a rent request is accepted/rejected.
+ */
 export const getIncomingRequests = (userId) => {
   return new Promise((resolve, reject) => {
     pool.connect().then(client => {
@@ -373,20 +377,3 @@ export const getIncomingRequests = (userId) => {
     });
   });
 };
-
-export const getNotificationLevel = (metaStatus) => {
-  switch(metaStatus) {
-    case "Pending Status":
-      return 0;
-    case "Start Reminder Sent":
-      return 1;
-    case "Start Confirmation Sent":
-      return 2;
-    case "End Reminder Sent":
-      return 3;
-    case "End Confirmation Sent":
-      return 4;
-    default:
-      return 0;
-  }
-}

@@ -19,7 +19,7 @@ router.post('/get_my_requests', isLoggedIn, ({body}, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    client.query(getMyRequestsQuery, [userId, nls.RRS_REQUEST_PENDING, nls.RRS_REQUEST_REJECTED]).then(({rows}) => {
+    client.query(getRequestsQuery, [userId, nls.RRS_REQUEST_PENDING, nls.RRS_REQUEST_REJECTED]).then(({rows}) => {
       client.release();
 
       res.status(200).json({myRequests: rows});

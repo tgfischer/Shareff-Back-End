@@ -143,11 +143,11 @@ router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
             case nls.RRS_REQUEST_PENDING:
                 if (approved === true) {
                     newStatus = nls.RRS_REQUEST_ACCEPTED;
-                    createBooking(rentRequest.rows[0]); // Create a booking in the db
-                    sendRentRequestStatusChangeNotification(rentRequest.rows[0], newStatus);
+                    createBooking(request); // Create a booking in the db
+                    sendRentRequestStatusChangeNotification(request, newStatus);
                 } else if (approved === false) {
                     newStatus = nls.RRS_REQUEST_REJECTED;
-                    sendRentRequestStatusChangeNotification(rentRequest.rows[0], newStatus);
+                    sendRentRequestStatusChangeNotification(request, newStatus);
                 } else {
                     // The status is pending, and an approval was not specified. Keep it the same.
                     newStatus = status;
@@ -264,7 +264,6 @@ const getRentRequest = (requestId) => {
 };
 
 const createBooking = (rentRequest) => {
-    console.log("Attempting to create a booking with: " + JSON.stringify(rentRequest, null, 2));
     pool.connect().then(client => {
       // get the price of the rental item first
       const getRentalItemQuery = `SELECT price FROM "public"."rentalItem" WHERE "itemId" = $1`;
