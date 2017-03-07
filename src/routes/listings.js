@@ -18,7 +18,10 @@ router.post('/', (req, res) => {
   // Replace the spaces with |'s in the query. This allows us to match with each
   // variable in the string
   q = q.replace(/\s+/g, '|');
-  location = location.replace(/\s+/g, '|');
+
+  if (location) {
+    location = location.replace(/\s+/g, '|');
+  }
 
   pool.connect().then(client => {
     const query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", "rentalItem"."description", \
