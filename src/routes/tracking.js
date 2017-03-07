@@ -5,7 +5,11 @@ import {extendMoment} from 'moment-range';
 import {nls} from '../i18n/en';
 import {pool} from '../app';
 import {
-    sendStartReminders, sendStartConfirmations, sendEndReminders, sendEndConfirmations
+    sendStartReminders,
+    sendStartConfirmations,
+    sendEndReminders,
+    sendEndConfirmations,
+    sendRentRequestExpiredNotification
 } from '../utils/EmailNotification';
 import {completeTransaction} from '../utils/Payments';
 
@@ -38,8 +42,6 @@ const timeBeforeBooking = 1;    // This value is 1 hour before
 const timeAfterBooking = -0.25; // This value is 15 minutes after
 
 const tracker = schedule.scheduleJob(timeRule, () => {
-    console.log("Tracking enabled");
-
     const query = `SELECT "booking".*, "rentalItem"."ownerId" \
                     FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId" = "rentalItem"."itemId";`;
     pool.connect().then(client => {
@@ -149,5 +151,42 @@ const updateBookingMetaStatus = (newStatus, bookingId) => {
         });
     });
 };
+
+// The following function is used to progress the rent request into the cancelled state when it has exceeded its start date
+const updateRentRequestStatus = (newStatus, rentRequestId) => {
+    const updateQuery = `UPDATE "rentRequest" SET "status"=$1 WHERE "requestId"=$2;`;
+    pool.connect().then(client => {
+        client.query(updateQuery, [newStatus, rentRequestId]).then(result => {
+            client.release();
+        }).catch(err => {
+            client.release();
+            console.log(err);  
+        });
+    });
+}
+
+/** 
+ * The following scheduled function will set the status of PENDING rent requests to expired once their start date has passed. 
+ */
+const expiredRentRequests = schedule.scheduleJob(timeRule, () => {
+    const query = `SELECT * FROM "rentRequest";`
+    pool.connect().then(client => {
+        client.query(query).then(result => {
+            client.release();
+            const requests = result.rows;
+            for (let rentRequest of requests) {
+                const now = moment();
+                const start = moment(rentRequest.startDate);
+                const nowToStart = (moment.duration(start.diff(now))).asHours(); // Get the duration from start to now
+
+                if (nowToStart <= 0 && rentRequest.status === nls.RRS_REQUEST_PENDING) {
+                    // This rent request has expired
+                    updateRentRequestStatus(nls.RRS_REQUEST_EXPIRED, rentRequest.requestId);
+                    sendRentRequestExpiredNotification(rentRequest);
+                }
+            }
+        });
+    });
+});
 
 export {router as tracking}

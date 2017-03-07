@@ -8,7 +8,7 @@ const getRequestsQuery = 'SELECT "rentRequest"."requestId", "rentRequest"."itemI
                       "rentalItem"."title" AS "itemTitle", concat_ws(\' \', "userTable"."firstName", "userTable"."lastName") AS "ownersName" \
                 FROM ("rentalItem" INNER JOIN "rentRequest" ON "rentalItem"."itemId"="rentRequest"."itemId") \
                       INNER JOIN "userTable" ON "rentRequest"."renterId"="userTable"."userId" \
-                WHERE "rentRequest"."renterId"=$1 AND ("rentRequest"."status"=$2 OR "rentRequest"."status"=$3);';
+                WHERE "rentRequest"."renterId"=$1 AND ("rentRequest"."status"=$2 OR "rentRequest"."status"=$3 OR "rentRequest"."status"=$4);';
 
 /**
  * Getting a list of my requests
@@ -19,7 +19,7 @@ router.post('/get_my_requests', isLoggedIn, ({body}, res) => {
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
-    client.query(getRequestsQuery, [userId, nls.RRS_REQUEST_PENDING, nls.RRS_REQUEST_REJECTED]).then(({rows}) => {
+    client.query(getRequestsQuery, [userId, nls.RRS_REQUEST_PENDING, nls.RRS_REQUEST_REJECTED, nls.RRS_REQUEST_EXPIRED]).then(({rows}) => {
       client.release();
 
       res.status(200).json({myRequests: rows});
