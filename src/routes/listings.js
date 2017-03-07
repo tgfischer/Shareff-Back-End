@@ -11,13 +11,14 @@ const NUM_PER_PAGE = 10;
  */
 router.post('/', (req, res) => {
   // Get the variables from URL
-  const {startDate, endDate, page, location, maxPrice, maxDistance} = req.body;
+  const {startDate, endDate, category, page, maxPrice, maxDistance} = req.body;
   const offset = page && page >= 0 ? page * NUM_PER_PAGE : 0;
-  let {q} = req.body;
+  let {q, location} = req.body;
 
   // Replace the spaces with |'s in the query. This allows us to match with each
   // variable in the string
   q = q.replace(/\s+/g, '|');
+  location = location.replace(/\s+/g, '|');
 
   pool.connect().then(client => {
     const query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", "rentalItem"."description", \
@@ -26,12 +27,13 @@ router.post('/', (req, res) => {
                       "userTable"."lastName" AS "ownerLastName" \
                     FROM ("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
                           INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId" \
-                    WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\' \
-                    LIMIT $2 \
-                    OFFSET $3';
+                    WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1 OR "address"."line1" ~* $2 OR "address"."line2" ~* $2 \
+                      OR "address"."city" ~* $2 OR "address"."postalCode" ~* $2) AND "rentalItem"."status" != \'Archived\' \
+                    LIMIT $3 \
+                    OFFSET $4';
     // Query the database. ~* matches the regular expression, case insensitive
     // substring limits the amount of characters that are returned
-    client.query(query, [q, NUM_PER_PAGE, offset]).then(({rows}) => {
+    client.query(query, [q, location, NUM_PER_PAGE, offset]).then(({rows}) => {
       const listings = rows;
 
       // Now query the database for the total number of listings that match the
