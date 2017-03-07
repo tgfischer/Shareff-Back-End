@@ -62,7 +62,6 @@ const tracker = schedule.scheduleJob(timeRule, () => {
 
                 // Look to send notification emails throughout the course of a booking based on the notificationMetaStatus
                 if (notificationMetaStatus === nls.BMS_END_CONF_SENT) {
-                    console.log("This booking is over");
                     continue;
 
                 } else if (nowToStart > 0 && nowToStart <= timeBeforeBooking && (notificationMetaStatus === nls.BMS_PENDING_START)) {
