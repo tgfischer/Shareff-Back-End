@@ -100,6 +100,40 @@ export const getRentRequestRejectedNotificationTemplate = (firstName, itemTitle)
         </body>
     </html>`;
 };
+
+// Template for the email sent to the renter when their rent request has expired 
+export const getRentRequestExpiredNotificationTemplate = (firstName, itemTitle) => {
+    return `
+    <html>
+        <head>
+            <style> 
+                
+            </style>
+        </head>
+        <body>
+            <div>
+                <p> Hi ${firstName}! </p>
+                <div> Unfortunately, the owner of the item <b>"${itemTitle}"</b> did not reply to your request in time. Therefore, this rent request has expired. Please head over to Shareff to submit another request, or search for more items to rent! </div>
+                <br/>
+                <br/>
+                <button> 
+                    Go to Shareff!
+                </button>
+                <br/>
+                <br/>
+                <i> Have a great day! </i>
+                <br/>
+                <br/>
+                <div>
+                    <b> The Shareff Team </b><br/>
+                    London, ON, Canada<br/>
+                    info.shareff@gmail.com<br/>
+                </div>
+            </div>
+        </body>
+    </html>`;
+};
+
 /* --------------------------------------------------- REMINDER/CONFIRMATION EMAIL TEMPLATES --------------------------------------------------- */
 // Template sent to the renter to remind them that their rental booking will start soon
 export const getRenterStartReminderNotificationTemplate = (firstName, itemTitle, startDate) => {
