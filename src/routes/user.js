@@ -22,7 +22,7 @@ router.post('/get_target_user', (req, res) => {
 
     client.query(query, [userId]).then(result => {
       const targetUser = result.rows[0];
-      query = 'SELECT "itemId", "title", "category", "costPeriod", "price" FROM "rentalItem" WHERE "ownerId"=$1';
+      query = 'SELECT "itemId", "title", "category", "costPeriod", "price" FROM "rentalItem" WHERE "ownerId"=$1 AND "status"!= \'Archived\'';
 
       client.query(query, [userId]).then(result => {
         client.release();

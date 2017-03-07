@@ -37,6 +37,7 @@ export const nls = {
   BOOKING_PENDING: 'Booking Pending',
   BOOKING_ACTIVE: 'Booking Active',
   BOOKING_COMPLETE: 'Booking Complete',
+  BOOKING_UNAVAILABLE: 'Unavailable',
 
   /* Email Notification Subject Lines */
   SHAREFF_ALERTS: 'Shareff Alerts',
