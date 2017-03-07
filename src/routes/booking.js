@@ -49,7 +49,6 @@ router.post('/get_booking_info', (req, res) => {
                         client.release();
                         const ratings = ratingsRes.rows;
                         gatherAllBookingInfo(booking, renter, owner, ratings).then(resObj => {
-                            console.log(resObj);
                             res.status(200).json({bookingInfo: resObj});
                         });
                     }).catch(err => {
@@ -120,9 +119,7 @@ const gatherAllBookingInfo = (booking, renter, owner, ratings) => {
  * 
  */ 
 router.post('/submit_review', (req, res) => {
-    console.log("Submitting review");
     if (!req.body.bookingId || !req.body.ratingUserId || !req.body.rating) {
-        console.log("Data is not right");
         res.status(500).json({
             err: {
                 message: nls.INVALID_PARAMETER_SET
@@ -136,7 +133,6 @@ router.post('/submit_review', (req, res) => {
         pool.connect().then(client => {
             client.query(query, [req.body.bookingId]).then(bookingRes => {
                 const booking = bookingRes.rows[0];
-                console.log(booking);
                 let userIdFor, userIdFrom;
 
                 // On the booking, there are renter and owner ids. We also have one id of a 
@@ -204,8 +200,75 @@ router.post('/submit_review', (req, res) => {
     }
 });
 
+/**
+ * The following route will be used to update the appropriate field in the booking table to confirm/reject the item confirmation. 
+ * 
+ * @param bookingId 
+ * @param userId - the user making this request
+ * @param confirm - true if they confirm, false if they reject
+ * 
+ * 
+ * Need the following new fields on the booking table: 
+ *  ownerStartConfirm
+ *  renterStartConfirm
+ *  ownerEndConfirm
+ *  renterEndConfirm
+ */
 router.post('/submit_confirmation', (req, res) => {
-    // To be implemented soon.. 
+    const {bookingId, userId, confirm} = req.body;
+    if (!bookingId || !userId || confirm === undefined) {
+        res.status(500).json({
+            err: {
+                message: nls.INVALID_PARAMETER_SET
+            }
+        });
+    } else {
+        // Get the full booking information from the id, and the renter's id from the item
+        const query = `SELECT "booking".*, "rentalItem"."ownerId" \
+                        FROM public."booking" INNER JOIN public."rentalItem" ON "booking"."itemId" = "rentalItem"."itemId" \
+                        WHERE "bookingId"=$1;`;
+        pool.connect().then(client => {
+            client.query(query, [bookingId]).then(bookingRes => {
+                const booking = bookingRes.rows[0];
+                let updateQuery;
+                if (booking.ownerId === userId && booking.status === nls.BOOKING_ACTIVE) {
+                    // Owner Start Confirmation
+                    updateQuery = `UPDATE "booking" SET "ownerStartConfirm"=$1 WHERE "bookingId"=$2;`;
+                } else if (booking.userId === userId && booking.status === nls.BOOKING_ACTIVE) {
+                    // Renter Start Confirmation
+                    updateQuery = `UPDATE "booking" SET "renterStartConfirm"=$1 WHERE "bookingId"=$2;`;
+                } else if (booking.ownerId === userId && booking.status === nls.BOOKING_COMPLETE) {
+                    // Owner End Confirmation
+                    updateQuery = `UPDATE "booking" SET "ownerEndConfirm"=$1 WHERE "bookingId"=$2;`;
+                } else if (booking.userId === userId && booking.status === nls.BOOKING_COMPLETE) {
+                    // Renter End Confirmation
+                    updateQuery = `UPDATE "booking" SET "renterEndConfirm"=$1 WHERE "bookingId"=$2;`;
+                }
+
+                if (updateQuery) {
+                    client.query(updateQuery, [confirm, bookingId]).then(result => {
+                        client.release();
+                        res.status(200).json({success:true});
+                    }).catch(err => {
+                        console.log(err);
+                        client.release();
+                        res.status(500).json({err});
+                    });
+                } else {
+                    // Make sure we return with error if we go through this request without updating!
+                    res.status(500).json({
+                        err: {
+                            message: nls.UNAUTHORIZED
+                        }
+                    });
+                }
+            }).catch(err => {
+                console.log(err);
+                client.release();
+                res.status(500).json({err});
+            });
+        });
+    }
 });
 
 export {router as booking}

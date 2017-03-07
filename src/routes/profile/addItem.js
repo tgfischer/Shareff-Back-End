@@ -27,7 +27,7 @@ router.post('/add_item', isLoggedIn, (req, res) => {
 
     client.query(query, [title, category, description, price, addressId, terms, userId, costPeriod, photos]).then(({rows}) => {
       client.release();
-
+    
       const {itemId} = rows[0];
       res.status(200).json({itemId});
     }).catch(err => {
