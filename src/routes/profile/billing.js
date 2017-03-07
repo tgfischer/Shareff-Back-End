@@ -35,7 +35,6 @@ router.post('/update_billing_info', isLoggedIn, (req, res) => {
       updateCreditCard(ccInfo, stripeCustomerId, userId)
     ];
 
-
     Promise.all(promises).then(result => {
       getUser(client, userId, token).then(user => {
         res.status(200).json({user});
