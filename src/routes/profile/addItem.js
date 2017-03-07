@@ -43,7 +43,7 @@ router.post('/add_item', isLoggedIn, (req, res) => {
           });
         });
       });
-
+      
       res.status(200).json({itemId});
     }).catch(err => {
       client.release();
