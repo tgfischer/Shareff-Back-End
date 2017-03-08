@@ -53,7 +53,7 @@ router.post('/', (req, res) => {
 
     // 2000 is our upper limit, so if they set it to 2000 then don't filter out
     // items by max distance
-    if (maxDistance && maxDistance < 2000 && longitude && latitude) {
+    if (maxDistance && maxDistance < 100 && longitude && latitude) {
       params.push(longitude);
       params.push(latitude);
       params.push(maxDistance * 1000); // Calculate the distance, convert from km to meters
