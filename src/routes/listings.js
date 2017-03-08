@@ -11,21 +11,23 @@ const NUM_PER_PAGE = 10;
  */
 router.post('/', (req, res) => {
   // Get the variables from URL
-  const {startDate, endDate, category, page, maxPrice, maxDistance} = req.body;
+  const {
+    startDate, endDate, category, page, maxPrice, maxDistance, longitude, latitude
+  } = req.body;
   const offset = page && page >= 0 ? page * NUM_PER_PAGE : 0;
   let {q, location} = req.body;
 
   pool.connect().then(client => {
+    // Array to hold the parameters
+    const params = [];
+
     // The beginning of the query
     let query = 'SELECT "rentalItem"."itemId", "rentalItem"."title", "rentalItem"."description", \
                     "rentalItem"."price", "rentalItem"."costPeriod", "rentalItem"."ownerId", "rentalItem"."category", "rentalItem"."photos", \
                     "address"."city", "userTable"."firstName" AS "ownerFirstName", \
                     "userTable"."lastName" AS "ownerLastName" \
-                  FROM ("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
-                        INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId"';
-
-    // Array to hold the parameters
-    const params = [];
+                  FROM (("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
+                    INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId")';
 
     // If the user typed something into the search box
     if (q) {
@@ -47,6 +49,17 @@ router.post('/', (req, res) => {
       query += `${params.length > 1 ? ' AND' : ' WHERE ('} ("address"."line1" ~* $${params.length} OR \
                   "address"."line2" ~* $${params.length} OR "address"."city" ~* $${params.length} OR \
                   "address"."postalCode" ~* $${params.length})`;
+    }
+
+    // 2000 is our upper limit, so if they set it to 2000 then don't filter out
+    // items by max distance
+    if (maxDistance && maxDistance < 100 && longitude && latitude) {
+      params.push(longitude);
+      params.push(latitude);
+      params.push(maxDistance * 1000); // Calculate the distance, convert from km to meters
+
+      query += `${params.length > 3 ? ' AND' : ' WHERE ('} ST_DWithin("address"."gps", \
+        ST_SetSRID(ST_MakePoint($${params.length - 2}::double precision, $${params.length - 1}::double precision), 4326), $${params.length})`;
     }
 
     // Add the suffix to the query
