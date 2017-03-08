@@ -82,7 +82,8 @@ router.post('/', (req, res) => {
       // query
       client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\'', [q]).then(({rows}) => {
         client.release();
-        
+
+        // If there is a provided start and end date, we need to filter the listings for what is not booked        
         if (startDate && endDate) {
           filterAvailableListings(listings, startDate, endDate).then(listings => {
             res.status(200).json({
@@ -95,14 +96,12 @@ router.post('/', (req, res) => {
             res.status(500).json({err});
           });
         } else {
-          console.log("no start or end date");
           res.status(200).json({
             totalNumListings: Number(rows[0].totalNumListings),
             numPerPage: NUM_PER_PAGE,
             listings
           });
         }
-        
       }).catch(err => {
         client.release();
         console.error('ERROR: ', err.message, err.stack);
@@ -178,7 +177,6 @@ const filterAvailableListings = (listings, startDate, endDate) => {
 
     if (sizeOfListings > 0) {
       for (const listing of listings) {
-        console.log(listing);
         count++;
 
         pool.connect().then(client => {
@@ -190,7 +188,6 @@ const filterAvailableListings = (listings, startDate, endDate) => {
                 newListings.push(listing);
               }
               if (count === sizeOfListings) {
-                console.log("Returning new listings: " + newListings);
                 return resolve(newListings);
               }
             }).catch(err => {
@@ -204,7 +201,6 @@ const filterAvailableListings = (listings, startDate, endDate) => {
         });
       }
     } else {
-      console.log("There were no listings!");
       return resolve(listings);
     }
   });
@@ -223,15 +219,13 @@ const isListingAvailable = (requestRange, bookings) => {
         const bookedRange = moment.range(bookedStartDate, bookedEndDate);
 
         if (bookedRange.overlaps(requestRange, {adjacent: true}) || requestRange.overlaps(bookedRange, {adjacent:true})) { // true)
-          console.log("This overlaps");
           return resolve(false);
-        } else if (count === sizeOfBookings) {
-          console.log("Returning is listing available");
+        } 
+        if (count === sizeOfBookings) {
           return resolve(true);
         }
       }
     } else {
-      console.log("There were no bookings!");
       return resolve(true);
     }
   });
