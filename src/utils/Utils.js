@@ -312,7 +312,7 @@ export const convertDate = (date) => {
  export const calculatePrice = (startDate, endDate, price) => {
    const start = moment(startDate);
    const end = moment(endDate);
-   const duration = moment.duration(end.diff(start)).asDays();
+   const duration = moment.duration(end.diff(start)).asHours();
    const totalPrice = (duration * price).toFixed(2);
    return totalPrice;
  }

@@ -74,12 +74,12 @@ router.post('/', isLoggedOut, (req, res) => {
               }
 
               // Build the query to insert the address
-              query = `INSERT INTO "address" ("line1", "line2", "city", "province", "postalCode", "latitude", "longitude", "userId") \
-                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
+              query = `INSERT INTO "address" ("line1", "line2", "city", "province", "postalCode", "longitude", "latitude", "gps", "userId") \
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8) \
                         RETURNING "addressId"`;
 
               // Insert the address into the database
-              client.query(query, [addressOne, addressTwo, city, province, postalCode, latitude, longitude, userId]).then(result => {
+              client.query(query, [addressOne, addressTwo, city, province, postalCode, longitude, latitude, userId]).then(result => {
                 // Insert the user into the users table
                 client.query('COMMIT').then(result => {
                   // Generate the token from the userId
