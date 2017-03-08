@@ -66,11 +66,15 @@ router.post('/', (req, res) => {
       client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\'', [q]).then(({rows}) => {
         client.release();
 
-        // Return the result to the client
-        res.status(200).json({
-          totalNumListings: Number(rows[0].totalNumListings),
-          numPerPage: NUM_PER_PAGE,
-          listings
+        filterAvailableListings(listings, startDate, endDate).then(listings => {
+          res.status(200).json({
+            totalNumListings: Number(rows[0].totalNumListings),
+            numPerPage: NUM_PER_PAGE,
+            listings
+          });
+        }).catch(err => {
+          console.error('ERROR: ', err.message, err.stack);
+          res.status(500).json({err});
         });
       }).catch(err => {
         client.release();
@@ -135,5 +139,71 @@ router.post('/get_rental_item', (req, res) => {
     res.status(500).json({err});
   });
 });
+
+const filterAvailableListings = (listings, startDate, endDate) => {
+  return new Promise((resolve, reject) => {
+    const requestStartDate = moment(startDate, nls.MOMENT_DATE_FORMAT);
+    const requestEndDate = moment(endDate, nls.MOMENT_DATE_FORMAT);
+    const requestRange = moment().range(requestStartDate, requestEndDate);
+    const sizeOfListings = listings.length;
+    let count = 0; 
+    let newListings = [];
+
+    if (sizeOfListings > 0) {
+      for (const listing of listings) {
+        console.log(listing);
+        count++;
+
+        pool.connect().then(client => {
+          client.query(`SELECT * FROM "booking" WHERE "itemId"=$1;`, [listing.itemId]).then(result => {
+            const bookings = result.rows;
+            
+            isListingAvailable(requestRange, bookings).then(isAvailable => {
+              if (isAvailable) {
+                newListings.push(listing);
+              }
+            }).catch(err => {
+              console.log(err);
+              return reject(err);
+            });
+          }).catch(err => {
+            return reject(err);
+          });
+        });
+
+        if (count === sizeOfListings-1) {
+          return resolve(newListings);
+        }
+      }
+    } else {
+      return resolve(listings);
+    }
+  });
+
+};
+
+const isListingAvailable = (requestRange, bookings) => {
+  return new Promise((resolve, reject) => {
+    const sizeOfBookings = bookings.length;
+    let count = 0; 
+    if (sizeOfBookings > 0) {
+      for (const booking of bookings) {
+        count++;
+        const bookedStartDate = moment(booking.startDate, nls.MOMENT_DATE_FORMAT);
+        const bookedEndDate = moment(booking.endDate, nls.MOMENT_DATE_FORMAT);
+
+        if (requestRange.contains(bookedStartDate) || requestRange.contains(bookedEndDate)) {
+          return resolve(false);
+        }
+
+        if (count === sizeOfBookings-1) {
+          return resolve(true);
+        }
+      }
+    } else {
+      return resolve(true);
+    }
+  });
+};
 
 export {router as listings}
