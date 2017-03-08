@@ -114,7 +114,7 @@ const tracker = schedule.scheduleJob(timeRule, () => {
                     const amount = Math.trunc(booking.totalCost * 100);
 
                     updateBookingStatus(nls.BOOKING_COMPLETE, booking.bookingId);
-                    completeTransaction(renterId, ownerId, amount);
+                    completeTransaction(renterId, ownerId, amount, booking.bookingId);
                 }
             }
         }).catch(err => {
@@ -160,13 +160,13 @@ const updateRentRequestStatus = (newStatus, rentRequestId) => {
             client.release();
         }).catch(err => {
             client.release();
-            console.log(err);  
+            console.log(err);
         });
     });
 }
 
-/** 
- * The following scheduled function will set the status of PENDING rent requests to expired once their start date has passed. 
+/**
+ * The following scheduled function will set the status of PENDING rent requests to expired once their start date has passed.
  */
 const expiredRentRequests = schedule.scheduleJob(timeRule, () => {
     const query = `SELECT * FROM "rentRequest";`

@@ -1,7 +1,10 @@
 import {stripe, convertDate} from './Utils';
 import {pool} from '../app';
+import {nls} from '../i18n/en';
 
-export const completeTransaction = (renterId, ownerId, amount) => {
+export const completeTransaction = (renterId, ownerId, amount, bookingId) => {
+  const paymentQuery = `UPDATE "booking" SET "paymentStatus" = $1 WHERE "bookingId" = $2`;
+
   pool.connect().then(client => {
     const getCustomerQuery = `SELECT "stripeCustomerId" FROM "userTable" WHERE "userId" = $1`;
     const stripeFee = Math.trunc(amount*0.029)+30; // strip take 2.9% + 30c
@@ -25,22 +28,42 @@ export const completeTransaction = (renterId, ownerId, amount) => {
               account: stripeAccountId
             }
           }).then(result => {
-            client.release();
-            console.log(result);
+            console.log("payment completed successfully");
+            client.query(paymentQuery, [nls.PAYMENT_COMPLETED, bookingId]).then(result => {
+              client.release();
+            }).catch(err => {
+              console.log(err);
+            });
           }).catch(err => {
-            client.release();
             console.log(err);
+            client.query(paymentQuery, [nls.PAYMENT_FAILED, bookingId]).then(result => {
+              client.release();
+            }).catch(err => {
+              console.log(err);
+            });
           });
         }).catch(err => {
-          client.release();
+          client.query(paymentQuery, [nls.PAYMENT_FAILED, bookingId]).then(result => {
+            client.release();
+          }).catch(err => {
+            console.log(err);
+          });
           console.log(err);
         });
       }).catch(err => {
-        client.release();
+        client.query(paymentQuery, [nls.PAYMENT_FAILED, bookingId]).then(result => {
+          client.release();
+        }).catch(err => {
+          console.log(err);
+        });
         console.log(err);
       });
     }).catch(err => {
-      client.release();
+      client.query(paymentQuery, [nls.PAYMENT_FAILED, bookingId]).then(result => {
+        client.release();
+      }).catch(err => {
+        console.log(err);
+      });
       console.log(err);
     });
   });

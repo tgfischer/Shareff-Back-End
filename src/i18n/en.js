@@ -39,6 +39,11 @@ export const nls = {
   BOOKING_COMPLETE: 'Complete',
   BOOKING_UNAVAILABLE: 'Unavailable',
 
+  /* Payment Statuses */
+  PAYMENT_PENDING: 'Pending',
+  PAYMENT_COMPLETED: 'Completed',
+  PAYMENT_FAILED: 'Failed',
+
   /* Email Notification Subject Lines */
   SHAREFF_ALERTS: 'Shareff Alerts',
   SHAREFF_REMINDERS: 'Shareff Reminders',
