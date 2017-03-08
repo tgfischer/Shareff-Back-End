@@ -41,7 +41,7 @@ export const nls = {
 
   /* Payment Statuses */
   PAYMENT_PENDING: 'Pending',
-  PAYMENT_COMPLETED: 'Completed',
+  PAYMENT_COMPLETED: 'Complete',
   PAYMENT_FAILED: 'Failed',
 
   /* Email Notification Subject Lines */
