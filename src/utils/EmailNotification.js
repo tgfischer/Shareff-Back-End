@@ -234,13 +234,16 @@ export const sendRentRequestNotification = (newRentRequest) => {
 const getRentRequestRenter = (rentRequest) => {
     return new Promise((resolve, reject) => {
         pool.connect().then(client => {
-            const getRenterQuery = `SELECT "email", "firstName" FROM public."userTable" WHERE "renterId"=$1;`;
-            client.query(getRenterQuery, [booking.userId]).then(renter => {
+            const getRenterQuery = `SELECT "email", "firstName" FROM public."userTable" WHERE "userId"=$1;`;
+            client.query(getRenterQuery, [rentRequest.renterId]).then(renter => {
                 const getItemTitle = `SELECT "title" FROM public."rentalItem" WHERE "itemId"=$1`;
-                client.query(getItemTitle, [booking.itemId]).then(itemTitle => {
+                client.query(getItemTitle, [rentRequest.itemId]).then(itemTitle => {
                     client.release();
                     return resolve([renter.rows[0], itemTitle.rows[0]]);
                 });
+            }).catch(err => {
+                client.release();
+                return reject(err);  
             });
         }).catch(err => {
             client.release();
@@ -260,6 +263,8 @@ export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) 
         const renter = returnArr[0];
         const title = returnArr[1].title;
 
+        console.log(rentRequest, newStatus, renter, title);
+
         let emailSubject, htmlTemplate;
         if (newStatus === nls.RRS_REQUEST_ACCEPTED) {
             emailSubject = nls.RENT_REQUEST_ACCEPTED;
@@ -271,7 +276,6 @@ export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) 
 
 
         if (emailSubject && htmlTemplate) {
-            console.log("Send mail" + renter.rows[0].email);
             sendMail({
                 from : nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
                 to : renter.email,
@@ -280,7 +284,7 @@ export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) 
             });
         }
     }).catch(err => {
-        console.log("Error getting rent request renter");
+        console.log("Error getting rent request renter" + err);
     });
 };
 
