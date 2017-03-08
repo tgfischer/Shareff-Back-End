@@ -1,15 +1,15 @@
-import express from 'express'; 
+import express from 'express';
 import {pool} from '../app';
 import Moment from 'moment';
 import {extendMoment} from 'moment-range';
 import {nls} from '../i18n/en';
 import {isLoggedIn, updateAverageRating} from '../utils/Utils';
 
-const router = express.Router(); 
+const router = express.Router();
 const moment = extendMoment(Moment);
 
 /**
- *  The following route will be used to supply the proper information for the /booking page. 
+ *  The following route will be used to supply the proper information for the /booking page.
  *  A bookingId will be passed to this route in order to query and return the correct info.
  */
 router.post('/get_booking_info', (req, res) => {
@@ -22,7 +22,7 @@ router.post('/get_booking_info', (req, res) => {
         });
     } else {
         /**
-         * Necessary information for the booking page: 
+         * Necessary information for the booking page:
          *      - All the booking information, such as start date, end date, status and rental item
          *      - All user information, such as name, average rating, photo
          *      - Rental item info such as photo, title
@@ -31,7 +31,7 @@ router.post('/get_booking_info', (req, res) => {
             res.status(200).json({bookingInfo});
         }).catch(err => {
             console.log(err);
-            res.status(500).json({err});  
+            res.status(500).json({err});
         });
     }
 });
@@ -99,13 +99,14 @@ const gatherAllBookingInfo = (booking, renter, owner, ratings) => {
                 bookingId: booking.bookingId,
                 startDate: booking.startDate,
                 endDate: booking.endDate,
-                status: booking.status, 
+                status: booking.status,
                 totalCost: booking.totalCost,
                 ownerStartConfirm: booking.ownerStartConfirm,
                 renterStartConfirm: booking.renterStartConfirm,
                 ownerEndConfirm: booking.ownerEndConfirm,
-                renterEndConfirm: booking.renterEndConfirm
-            }, 
+                renterEndConfirm: booking.renterEndConfirm,
+                paymentStatus: booking.paymentStatus
+            },
             rentalItem: {
                 itemId: booking.itemId,
                 title: booking.title,
@@ -121,17 +122,17 @@ const gatherAllBookingInfo = (booking, renter, owner, ratings) => {
 
 /**
  *  The following route will be used to rate the opposite user based on the booking
- *  that was just completed. 
- * 
+ *  that was just completed.
+ *
  *  @param bookingId => the booking which is being rating
  *  @param ratingUserId => the user making this rating
  *  @param rating => the rating (out of 5) that the user is providing for the other user
- * 
- *  Optional params 
+ *
+ *  Optional params
  *  @param title => the title of the review (or summary)
  *  @param comment => a comment about the rating
- * 
- */ 
+ *
+ */
 router.post('/submit_review', (req, res) => {
     const {bookingId, ratingUserId, rating} = req.body;
     if (!bookingId || !ratingUserId || !rating) {
@@ -150,7 +151,7 @@ router.post('/submit_review', (req, res) => {
                 const booking = bookingRes.rows[0];
                 let userIdFor, userIdFrom;
 
-                // On the booking, there are renter and owner ids. We also have one id of a 
+                // On the booking, there are renter and owner ids. We also have one id of a
                 // "ratingUserId". Determine whether the renter or owner is submitting the review
                 if (ratingUserId === booking.userId) {
                     // The item renter is reviewing the item owner
@@ -168,7 +169,7 @@ router.post('/submit_review', (req, res) => {
                     });
                 }
 
-                // At this point, there could be two different insertion queries. 
+                // At this point, there could be two different insertion queries.
                 if (req.body.title && req.body.comments) {
                     // 1. Inserting with a title and comments
                     const insQuery = `INSERT INTO public."userReview" ("title", "comments", "userIdFor", "userIdFrom", "rating", "creationTime", "bookingId") \
@@ -188,7 +189,7 @@ router.post('/submit_review', (req, res) => {
                     }).catch(err => {
                         console.log(err);
                         client.release();
-                        res.status(500).json({err});   
+                        res.status(500).json({err});
                     });
                 } else {
                     // 2. Inserting without a title and comments
@@ -209,27 +210,27 @@ router.post('/submit_review', (req, res) => {
                     }).catch(err => {
                         console.log(err);
                         client.release();
-                        res.status(500).json({err});   
+                        res.status(500).json({err});
                     });
                 }
             }).catch(err => {
                 console.log(err);
                 client.release();
-                res.status(500).json({err}); 
+                res.status(500).json({err});
             });
         });
     }
 });
 
 /**
- * The following route will be used to update the appropriate field in the booking table to confirm/reject the item confirmation. 
- * 
- * @param bookingId 
+ * The following route will be used to update the appropriate field in the booking table to confirm/reject the item confirmation.
+ *
+ * @param bookingId
  * @param userId - the user making this request
  * @param confirm - true if they confirm, false if they reject
- * 
- * 
- * Need the following new fields on the booking table: 
+ *
+ *
+ * Need the following new fields on the booking table:
  *  ownerStartConfirm
  *  renterStartConfirm
  *  ownerEndConfirm
@@ -297,4 +298,3 @@ router.post('/submit_confirmation', (req, res) => {
 });
 
 export {router as booking}
-
