@@ -6,7 +6,7 @@ import {getPayload} from '../utils/Utils';
 import {nls} from '../i18n/en';
 
 const router = express.Router();
-const NUM_PER_PAGE = 10;
+const NUM_PER_PAGE = 5;
 
 const moment = extendMoment(Moment);
 
