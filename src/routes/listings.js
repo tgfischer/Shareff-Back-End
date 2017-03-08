@@ -76,35 +76,52 @@ router.post('/', (req, res) => {
 
     // Add the suffix to the query
     where += `${params.length > 0 ? ') AND' : ' WHERE'} "rentalItem"."status" != \'Archived\'`;
-    query += `${where} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-
-    // Push the last two parameters to the query
-    params.push(NUM_PER_PAGE);
-    params.push(offset);
+    query += where;
 
     // Query the database. ~* matches the regular expression, case insensitive
     // substring limits the amount of characters that are returned
     client.query(query, params).then(({rows}) => {
-      const listings = rows;
-      const query = `SELECT COUNT(*) AS "totalNumListings" \
-                      FROM (("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId") \
-                        INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId") \
-                      ${where}`;
 
-      // Remove the num per page and offset from the params
-      params.pop();
-      params.pop();
-
-      // Now query the database for the total number of listings that match the
-      // query
-      client.query(query, params).then(({rows}) => {
-        client.release();
-
-        // If there is a provided start and end date, we need to filter the listings for what is not booked
+      // If there is a provided start and end date, we need to filter the listings for what is not booked
+      let listings = rows;
+      if (category) {
+        // If there is a provided category(s), filter out results that do not match these
+        filterCategoryListings(listings, category).then(listings => {
+          // If there is a provided start and end date, we need to filter the listings for what is not booked        
+          if (startDate && endDate) {
+            filterAvailableListings(listings, startDate, endDate).then(listings => {
+              const listingAmount = listings.length;
+              listings = listings.splice(offset, offset+NUM_PER_PAGE);
+              res.status(200).json({
+                totalNumListings: listingAmount,
+                numPerPage: NUM_PER_PAGE,
+                listings
+              });
+            }).catch(err => {
+              console.error('ERROR: ', err.message, err.stack);
+              res.status(500).json({err});
+            });
+          } else {
+            const listingAmount = listings.length;
+            listings = listings.splice(offset, offset+NUM_PER_PAGE);
+            res.status(200).json({
+              totalNumListings: listingAmount,
+              numPerPage: NUM_PER_PAGE,
+              listings
+            });
+          }
+        }).catch(err => {
+          console.error('ERROR: ', err.message, err.stack);
+          res.status(500).json({err});
+        });
+      } else {
+        // If there is a provided start and end date, we need to filter the listings for what is not booked  
         if (startDate && endDate) {
           filterAvailableListings(listings, startDate, endDate).then(listings => {
+            const listingAmount = listings.length;
+            listings = listings.splice(offset, offset+NUM_PER_PAGE);
             res.status(200).json({
-              totalNumListings: Number(rows[0].totalNumListings),
+              totalNumListings: listingAmount,
               numPerPage: NUM_PER_PAGE,
               listings
             });
@@ -113,19 +130,15 @@ router.post('/', (req, res) => {
             res.status(500).json({err});
           });
         } else {
+          const listingsAmount = listings.length;
+          listings = listings.splice(offset, offset+NUM_PER_PAGE);
           res.status(200).json({
-            totalNumListings: Number(rows[0].totalNumListings),
+            totalNumListings: listingsAmount,
             numPerPage: NUM_PER_PAGE,
             listings
           });
         }
-      }).catch(err => {
-        client.release();
-        console.error('ERROR: ', err.message, err.stack);
-
-        // Return the error to the client
-        res.status(500).json({err});
-      });
+      }
     }).catch(err => {
       client.release();
       console.error('ERROR: ', err.message, err.stack);
@@ -183,6 +196,55 @@ router.post('/get_rental_item', (req, res) => {
   });
 });
 
+const filterCategoryListings = (listings, category) => {
+  return new Promise((resolve, reject) => {
+    const sizeOfListings = listings.length;
+    const sizeOfCategories = category.length;
+    let count = 0; 
+    let filteredListings = [];
+
+    if (sizeOfListings > 0 && sizeOfCategories > 0) {
+      for (const listing of listings) {
+        count++;
+        isCategoryFound(listing, category).then(isFound => {
+          if (isFound) {
+            filteredListings.push(listing);
+          }
+          if (count === sizeOfListings) {
+            return resolve(filteredListings);
+          }
+        }).catch(err => {
+          return reject(err);
+        });
+      }
+    } else {
+      return resolve(listings);
+    }
+  });
+};
+
+const isCategoryFound = (listing, categories) => {
+  return new Promise((resolve, reject) => {
+    // For each listing, check if any of that listing's categories match to any of the preferred categories
+    const sizeOfListCategories = listing.category.length;
+    if (sizeOfListCategories > 0) {
+      let count = 0;
+      for (const listCategory of listing.category) {
+        count++;
+        if (categories.indexOf(listCategory) > -1) {
+          return resolve(true);
+        }
+        if (count === sizeOfListCategories) {
+          return resolve(false);
+        }
+      }
+    } else {
+      // This listing has no categories to match with the requested categories
+      return resolve(false);
+    }
+  });
+};
+
 const filterAvailableListings = (listings, startDate, endDate) => {
   return new Promise((resolve, reject) => {
     const requestStartDate = moment(new Date(startDate), nls.MOMENT_DATE_FORMAT);
@@ -194,10 +256,10 @@ const filterAvailableListings = (listings, startDate, endDate) => {
 
     if (sizeOfListings > 0) {
       for (const listing of listings) {
-        count++;
-
         pool.connect().then(client => {
           client.query(`SELECT * FROM "booking" WHERE "itemId"=$1;`, [listing.itemId]).then(result => {
+            client.release();
+            count++;
             const bookings = result.rows;
 
             isListingAvailable(requestRange, bookings).then(isAvailable => {
