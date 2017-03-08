@@ -65,7 +65,7 @@ router.post('/get_personal_info', isLoggedIn, (req, res) => {
           }
 
           query = `UPDATE "address" \
-                    SET "line1"=$1, "line2"=$2, "city"=$3, "province"=$4, "postalCode"=$5, "longitude"=$7, "latitude"=$6, "gps"=ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography \
+                    SET "line1"=$1, "line2"=$2, "city"=$3, "province"=$4, "postalCode"=$5, "longitude"=$6, "latitude"=$7, "gps"=ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography \
                     WHERE "addressId"=$8`;
 
           // Update the user's address
