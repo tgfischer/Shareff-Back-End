@@ -1,10 +1,14 @@
 import express from 'express';
 import {pool} from '../app';
+import Moment from 'moment';
+import {extendMoment} from 'moment-range';
 import {getPayload} from '../utils/Utils';
 import {nls} from '../i18n/en';
 
 const router = express.Router();
 const NUM_PER_PAGE = 10;
+
+const moment = extendMoment(Moment);
 
 /**
  * Get the the rental listings from the query
@@ -78,17 +82,27 @@ router.post('/', (req, res) => {
       // query
       client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\'', [q]).then(({rows}) => {
         client.release();
-
-        filterAvailableListings(listings, startDate, endDate).then(listings => {
+        
+        if (startDate && endDate) {
+          filterAvailableListings(listings, startDate, endDate).then(listings => {
+            res.status(200).json({
+              totalNumListings: Number(rows[0].totalNumListings),
+              numPerPage: NUM_PER_PAGE,
+              listings
+            });
+          }).catch(err => {
+            console.error('ERROR: ', err.message, err.stack);
+            res.status(500).json({err});
+          });
+        } else {
+          console.log("no start or end date");
           res.status(200).json({
             totalNumListings: Number(rows[0].totalNumListings),
             numPerPage: NUM_PER_PAGE,
             listings
           });
-        }).catch(err => {
-          console.error('ERROR: ', err.message, err.stack);
-          res.status(500).json({err});
-        });
+        }
+        
       }).catch(err => {
         client.release();
         console.error('ERROR: ', err.message, err.stack);
@@ -155,9 +169,9 @@ router.post('/get_rental_item', (req, res) => {
 
 const filterAvailableListings = (listings, startDate, endDate) => {
   return new Promise((resolve, reject) => {
-    const requestStartDate = moment(startDate, nls.MOMENT_DATE_FORMAT);
-    const requestEndDate = moment(endDate, nls.MOMENT_DATE_FORMAT);
-    const requestRange = moment().range(requestStartDate, requestEndDate);
+    const requestStartDate = moment(new Date(startDate), nls.MOMENT_DATE_FORMAT);
+    const requestEndDate = moment(new Date(endDate), nls.MOMENT_DATE_FORMAT);
+    const requestRange = moment.range(requestStartDate, requestEndDate);
     const sizeOfListings = listings.length;
     let count = 0; 
     let newListings = [];
@@ -175,20 +189,22 @@ const filterAvailableListings = (listings, startDate, endDate) => {
               if (isAvailable) {
                 newListings.push(listing);
               }
+              if (count === sizeOfListings) {
+                console.log("Returning new listings: " + newListings);
+                return resolve(newListings);
+              }
             }).catch(err => {
               console.log(err);
               return reject(err);
             });
           }).catch(err => {
+            console.log(err);
             return reject(err);
           });
         });
-
-        if (count === sizeOfListings-1) {
-          return resolve(newListings);
-        }
       }
     } else {
+      console.log("There were no listings!");
       return resolve(listings);
     }
   });
@@ -204,16 +220,18 @@ const isListingAvailable = (requestRange, bookings) => {
         count++;
         const bookedStartDate = moment(booking.startDate, nls.MOMENT_DATE_FORMAT);
         const bookedEndDate = moment(booking.endDate, nls.MOMENT_DATE_FORMAT);
+        const bookedRange = moment.range(bookedStartDate, bookedEndDate);
 
-        if (requestRange.contains(bookedStartDate) || requestRange.contains(bookedEndDate)) {
+        if (bookedRange.overlaps(requestRange, {adjacent: true}) || requestRange.overlaps(bookedRange, {adjacent:true})) { // true)
+          console.log("This overlaps");
           return resolve(false);
-        }
-
-        if (count === sizeOfBookings-1) {
+        } else if (count === sizeOfBookings) {
+          console.log("Returning is listing available");
           return resolve(true);
         }
       }
     } else {
+      console.log("There were no bookings!");
       return resolve(true);
     }
   });
