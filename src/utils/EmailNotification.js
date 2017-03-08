@@ -272,7 +272,6 @@ export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) 
             htmlTemplate = getRentRequestRejectedNotificationTemplate(renter.firstName, title);
         }
 
-
         if (emailSubject && htmlTemplate) {
             sendMail({
                 from : nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
