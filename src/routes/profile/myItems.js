@@ -1,6 +1,6 @@
 import express from 'express';
 import {pool} from '../../app';
-import {isLoggedIn} from '../../utils/Utils';
+import {isLoggedIn, PLACEHOLDER_PHOTO_URL} from '../../utils/Utils';
 
 const router = express.Router();
 
@@ -60,7 +60,14 @@ router.post('/remove_my_item', isLoggedIn, (req, res) => {
  */
 router.post('/update_my_item', isLoggedIn, (req, res) => {
   // Get the itemId and ownerId from the request
-  const {title, category, price, costPeriod, description, terms, itemId, userId, photos} = req.body;
+  const {title, category, price, costPeriod, description, terms, itemId, userId} = req.body;
+  let {photos} = req.body;
+
+  // If all the photos have benn removed the item
+  // Perhaps could be a default value in the database
+  if (photos.length == 0) {
+    photos = [PLACEHOLDER_PHOTO_URL];
+  }
 
   // Connect to the pool, and grab a client
   pool.connect().then(client => {
