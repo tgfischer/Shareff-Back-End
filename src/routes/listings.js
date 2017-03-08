@@ -65,8 +65,6 @@ router.post('/', (req, res) => {
     // Add the suffix to the query
     query += `${params.length > 0 ? ') AND' : ' WHERE'} "rentalItem"."status" != \'Archived\' LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
-    console.log(query);
-
     // Push the last two parameters to the query
     params.push(NUM_PER_PAGE);
     params.push(offset);
