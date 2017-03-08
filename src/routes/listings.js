@@ -32,6 +32,7 @@ router.post('/', (req, res) => {
                     "userTable"."lastName" AS "ownerLastName" \
                   FROM (("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
                     INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId")';
+    let where = '';
 
     // If the user typed something into the search box
     if (q) {
@@ -40,7 +41,7 @@ router.post('/', (req, res) => {
       q = q.replace(/\s+/g, '|');
       params.push(q);
 
-      query += ` WHERE (("rentalItem"."title" ~* $${params.length} OR "rentalItem"."description" ~* $${params.length})`;
+      where += ` WHERE (("rentalItem"."title" ~* $${params.length} OR "rentalItem"."description" ~* $${params.length})`;
     }
 
     // If the user entered a location
@@ -50,24 +51,32 @@ router.post('/', (req, res) => {
       location = location.replace(/\s+/g, '|');
       params.push(location);
 
-      query += `${params.length > 1 ? ' AND' : ' WHERE ('} ("address"."line1" ~* $${params.length} OR \
+      where += `${params.length > 1 ? ' AND' : ' WHERE ('} ("address"."line1" ~* $${params.length} OR \
                   "address"."line2" ~* $${params.length} OR "address"."city" ~* $${params.length} OR \
                   "address"."postalCode" ~* $${params.length})`;
     }
 
-    // 2000 is our upper limit, so if they set it to 2000 then don't filter out
+    // If the user wants to filter by price
+    if (maxPrice && maxPrice < 2000) {
+      params.push(maxPrice);
+
+      where += `${params.length > 1 ? ' AND' : ' WHERE ('} ("rentalItem"."price" <= $${params.length})`;
+    }
+
+    // 100 is our upper limit, so if they set it to 2000 then don't filter out
     // items by max distance
     if (maxDistance && maxDistance < 100 && longitude && latitude) {
       params.push(longitude);
       params.push(latitude);
       params.push(maxDistance * 1000); // Calculate the distance, convert from km to meters
 
-      query += `${params.length > 3 ? ' AND' : ' WHERE ('} ST_DWithin("address"."gps", \
+      where += `${params.length > 3 ? ' AND' : ' WHERE ('} ST_DWithin("address"."gps", \
         ST_SetSRID(ST_MakePoint($${params.length - 2}::double precision, $${params.length - 1}::double precision), 4326), $${params.length})`;
     }
 
     // Add the suffix to the query
-    query += `${params.length > 0 ? ') AND' : ' WHERE'} "rentalItem"."status" != \'Archived\' LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    where += `${params.length > 0 ? ') AND' : ' WHERE'} "rentalItem"."status" != \'Archived\'`;
+    query += `${where} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
     // Push the last two parameters to the query
     params.push(NUM_PER_PAGE);
@@ -77,13 +86,21 @@ router.post('/', (req, res) => {
     // substring limits the amount of characters that are returned
     client.query(query, params).then(({rows}) => {
       const listings = rows;
+      const query = `SELECT COUNT(*) AS "totalNumListings" \
+                      FROM (("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId") \
+                        INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId") \
+                      ${where}`;
+
+      // Remove the num per page and offset from the params
+      params.pop();
+      params.pop();
 
       // Now query the database for the total number of listings that match the
       // query
-      client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\'', [q]).then(({rows}) => {
+      client.query(query, params).then(({rows}) => {
         client.release();
 
-        // If there is a provided start and end date, we need to filter the listings for what is not booked        
+        // If there is a provided start and end date, we need to filter the listings for what is not booked
         if (startDate && endDate) {
           filterAvailableListings(listings, startDate, endDate).then(listings => {
             res.status(200).json({
@@ -172,7 +189,7 @@ const filterAvailableListings = (listings, startDate, endDate) => {
     const requestEndDate = moment(new Date(endDate), nls.MOMENT_DATE_FORMAT);
     const requestRange = moment.range(requestStartDate, requestEndDate);
     const sizeOfListings = listings.length;
-    let count = 0; 
+    let count = 0;
     let newListings = [];
 
     if (sizeOfListings > 0) {
@@ -182,7 +199,7 @@ const filterAvailableListings = (listings, startDate, endDate) => {
         pool.connect().then(client => {
           client.query(`SELECT * FROM "booking" WHERE "itemId"=$1;`, [listing.itemId]).then(result => {
             const bookings = result.rows;
-            
+
             isListingAvailable(requestRange, bookings).then(isAvailable => {
               if (isAvailable) {
                 newListings.push(listing);
@@ -210,7 +227,7 @@ const filterAvailableListings = (listings, startDate, endDate) => {
 const isListingAvailable = (requestRange, bookings) => {
   return new Promise((resolve, reject) => {
     const sizeOfBookings = bookings.length;
-    let count = 0; 
+    let count = 0;
     if (sizeOfBookings > 0) {
       for (const booking of bookings) {
         count++;
@@ -220,7 +237,7 @@ const isListingAvailable = (requestRange, bookings) => {
 
         if (bookedRange.overlaps(requestRange, {adjacent: true}) || requestRange.overlaps(bookedRange, {adjacent:true})) { // true)
           return resolve(false);
-        } 
+        }
         if (count === sizeOfBookings) {
           return resolve(true);
         }

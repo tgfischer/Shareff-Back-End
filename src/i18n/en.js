@@ -34,14 +34,14 @@ export const nls = {
   BMS_END_CONF_SENT: 'End Confirmation Sent',
 
   /* Booking Statuses */
-  BOOKING_PENDING: 'Booking Pending',
-  BOOKING_ACTIVE: 'Booking Active',
-  BOOKING_COMPLETE: 'Booking Complete',
+  BOOKING_PENDING: 'Pending',
+  BOOKING_ACTIVE: 'Active',
+  BOOKING_COMPLETE: 'Complete',
   BOOKING_UNAVAILABLE: 'Unavailable',
 
   /* Payment Statuses */
   PAYMENT_PENDING: 'Pending',
-  PAYMENT_COMPLETED: 'Completed',
+  PAYMENT_COMPLETED: 'Complete',
   PAYMENT_FAILED: 'Failed',
 
   /* Email Notification Subject Lines */
