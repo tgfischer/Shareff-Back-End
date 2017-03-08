@@ -77,7 +77,7 @@ router.post('/', (req, res) => {
     // Add the suffix to the query
     where += `${params.length > 0 ? ') AND' : ' WHERE'} "rentalItem"."status" != \'Archived\'`;
     query += where;
-    
+
     // Query the database. ~* matches the regular expression, case insensitive
     // substring limits the amount of characters that are returned
     client.query(query, params).then(({rows}) => {
@@ -119,9 +119,7 @@ router.post('/', (req, res) => {
         if (startDate && endDate) {
           filterAvailableListings(listings, startDate, endDate).then(listings => {
             const listingAmount = listings.length;
-            const spliceAmount = (offset+NUM_PER_PAGE > listingAmount) ? listingAmount : offset+NUM_PER_PAGE;
-            console.log(listingAmount, offset, spliceAmount);
-            listings = listings.splice(offset, spliceAmount);
+            listings = listings.splice(offset, offset+NUM_PER_PAGE);
             res.status(200).json({
               totalNumListings: listingAmount,
               numPerPage: NUM_PER_PAGE,
