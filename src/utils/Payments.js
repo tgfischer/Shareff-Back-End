@@ -28,6 +28,7 @@ export const completeTransaction = (renterId, ownerId, amount) => {
               account: stripeAccountId
             }
           }).then(result => {
+            console.log("payment completed successfully");
             client.query(paymentQuery, [nls.PAYMENT_COMPLETED]).then(result => {
               client.release();
             }).catch(err => {
