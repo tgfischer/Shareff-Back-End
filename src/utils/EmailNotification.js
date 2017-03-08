@@ -263,8 +263,6 @@ export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) 
         const renter = returnArr[0];
         const title = returnArr[1].title;
 
-        console.log(rentRequest, newStatus, renter, title);
-
         let emailSubject, htmlTemplate;
         if (newStatus === nls.RRS_REQUEST_ACCEPTED) {
             emailSubject = nls.RENT_REQUEST_ACCEPTED;
