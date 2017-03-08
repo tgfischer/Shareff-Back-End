@@ -158,7 +158,7 @@ router.post('/request/auto_update_status', isLoggedIn, (req, res) => {
                 break;
         }
 
-        // Update the rent request in the database 
+        // Update the rent request in the database
         updateRentRequest(newStatus, request.requestId).then(result => {
             // Get the new updated set of incoming requests to return to the client
             getIncomingRequests(userId).then(requests => {
@@ -250,7 +250,7 @@ const updateRentRequest = (newStatus, requestId) => {
 
 const getRentRequest = (requestId) => {
     return new Promise((resolve, reject) => {
-        pool.connect().then(client => { 
+        pool.connect().then(client => {
             const query = 'SELECT * FROM public."rentRequest" WHERE "requestId"=$1;';
             client.query(query, [requestId]).then(result => {
                 client.release();
@@ -271,8 +271,9 @@ const createBooking = (rentRequest) => {
         const {itemId, requestId, renterId, startDate, endDate} = rentRequest;
         const price = parseInt(result.rows[0].price);
         const totalCost = calculatePrice(startDate, endDate, price);
-        const createBookingQuery = `INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", "status", "metaStatus", "totalCost", "ownerStartConfirm", "renterStartConfirm", "ownerEndConfirm", "renterEndConfirm") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`;
-        const params = [itemId, requestId, renterId, startDate, endDate, nls.BOOKING_PENDING, nls.BMS_PENDING_START, totalCost, null, null, null, null];
+        const createBookingQuery = `INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", \
+                      "status", "metaStatus", "totalCost", "paymentStatus") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`;
+        const params = [itemId, requestId, renterId, startDate, endDate, nls.BOOKING_PENDING, nls.BMS_PENDING_START, totalCost, nls.PAYMENT_PENDING];
         client.query(createBookingQuery, params).then(result => {
             client.release();
             console.log("Created a booking successfully!");

@@ -17,28 +17,28 @@ import {
 import nodemailer from 'nodemailer';
 
 /**
- * The following utility methods will be used to send specific types of 
- * email notifications to users. 
- * 
- * Email notifications may include: 
- *      - someone wants to rent your item! 
+ * The following utility methods will be used to send specific types of
+ * email notifications to users.
+ *
+ * Email notifications may include:
+ *      - someone wants to rent your item!
  *  Upcoming reminders
  *      - your booking is coming up!
- *      - your item is being rented soon! 
+ *      - your item is being rented soon!
  *      - your rented item is due back soon!
  *      - your item is being returned soon!
  *  Confirmation of items
  *      - did you receive your rental item?
  *      - did you deliver your rental item?
- *      - did you return your rental item? 
- *      - was your rental item returned? 
+ *      - did you return your rental item?
+ *      - was your rental item returned?
  */
 
 const transporter = nodemailer.createTransport({
     service: "Gmail",
     debug: true,
     auth: {
-        user : process.env.INFO_EMAIL_USERNAME, 
+        user : process.env.INFO_EMAIL_USERNAME,
         pass : process.env.INFO_EMAIL_PASSWORD
     }
 });
@@ -57,7 +57,7 @@ const sendMail = (mailOptions) => {
 const getBookingOwner = (booking) => {
     return new Promise((resolve, reject) => {
         pool.connect().then(client => {
-            const getOwnerQuery = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" \ 
+            const getOwnerQuery = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" \
                         FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" \
                         WHERE "rentalItem"."itemId" = $1;`;
             client.query(getOwnerQuery, [booking.itemId]).then(owner => {
@@ -90,7 +90,7 @@ const getBookingRenter = (booking) => {
 };
 
 export const sendStartReminders = (booking) => {
-    // Send a start reminder to the owner 
+    // Send a start reminder to the owner
     getBookingOwner(booking).then(owner => {
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
@@ -118,7 +118,7 @@ export const sendStartReminders = (booking) => {
 };
 
 export const sendStartConfirmations = (booking) => {
-    // Send a start confirmation to the owner 
+    // Send a start confirmation to the owner
     getBookingOwner(booking).then(owner => {
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
@@ -141,12 +141,12 @@ export const sendStartConfirmations = (booking) => {
             html : getRenterStartConfirmationNotificationTemplate(renter.firstName, title.title)
         });
     }).catch(err => {
-        console.log("Error sending renter start confirmations: " + err);        
+        console.log("Error sending renter start confirmations: " + err);
     });
 };
 
 export const sendEndReminders = (booking) => {
-    // Send a end reminder to the owner 
+    // Send a end reminder to the owner
     getBookingOwner(booking).then(owner => {
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
@@ -169,12 +169,12 @@ export const sendEndReminders = (booking) => {
             html : getRenterEndReminderNotificationTemplate(renter.firstName, title.title, booking.endDate)
         });
     }).catch(err => {
-        console.log("Error sending renter end reminders: " + err);        
+        console.log("Error sending renter end reminders: " + err);
     });
 };
 
 export const sendEndConfirmations = (booking) => {
-    // Send a end confirmation to the owner 
+    // Send a end confirmation to the owner
     getBookingOwner(booking).then(owner => {
         sendMail({
             from : nls.SHAREFF_REMINDERS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
@@ -197,7 +197,7 @@ export const sendEndConfirmations = (booking) => {
             html : getRenterEndConfirmationNotificationTemplate(renter.firstName, title.title)
         });
     }).catch(err => {
-        console.log("Error sending renter start confirmations: " + err);        
+        console.log("Error sending renter start confirmations: " + err);
     });
 };
 
@@ -206,8 +206,8 @@ export const sendRentRequestNotification = (newRentRequest) => {
     pool.connect().then(client => {
         const query = `SELECT "userTable"."email", "userTable"."firstName", "rentalItem"."title" FROM public."userTable" INNER JOIN public."rentalItem" ON "userTable"."userId" = "rentalItem"."ownerId" WHERE "rentalItem"."itemId" = $1;`;
         client.query(query, [newRentRequest.itemId]).then(result => {
-            // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner. 
-            sendMail({ 
+            // The correct email will be passed along with the result. This can then be used to send off a rent request notification to the item owner.
+            sendMail({
                 from :  nls.SHAREFF_ALERTS + " <" + process.env.INFO_EMAIL_USERNAME + ">",
                 to : result.rows[0].email,
                 subject : nls.RENT_REQUEST_MADE,
@@ -221,9 +221,9 @@ export const sendRentRequestNotification = (newRentRequest) => {
                 console.log("Updated rent request status successfully");
             }).catch(err => {
                 client.release();
-                console.log("Error trying to update rent request status from Notification Pending to Pending " + err); 
+                console.log("Error trying to update rent request status from Notification Pending to Pending " + err);
             });
-            
+
         }).catch(err => {
             client.release();
             console.log(err);
@@ -251,8 +251,8 @@ const getRentRequestRenter = (rentRequest) => {
 
 // Rent Request Accepted/Rejected
 /**
- * Assume that the rent request status has not already been updated in the database. 
- * 
+ * Assume that the rent request status has not already been updated in the database.
+ *
  * i.e. After it changes to Accepted, it will be updated in the database and then sent here. Therefore send update with the status that it is going to be changed to.
  */
 export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) => {
@@ -265,11 +265,11 @@ export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) 
             emailSubject = nls.RENT_REQUEST_ACCEPTED;
             htmlTemplate = getRentRequestAcceptedNotificationTemplate(renter.firstName, title);
         } else if (newStatus === nls.RRS_REQUEST_REJECTED) {
-            emailSubject = nls.RENT_REQUEST_REJECTED; 
+            emailSubject = nls.RENT_REQUEST_REJECTED;
             htmlTemplate = getRentRequestRejectedNotificationTemplate(renter.firstName, title);
         }
 
-        
+
         if (emailSubject && htmlTemplate) {
             console.log("Send mail" + renter.rows[0].email);
             sendMail({
@@ -278,9 +278,9 @@ export const sendRentRequestStatusChangeNotification = (rentRequest, newStatus) 
                 subject : emailSubject,
                 html : htmlTemplate
             });
-        }       
-    }).catch(err => {   
-        console.log("Error getting rent request renter");  
+        }
+    }).catch(err => {
+        console.log("Error getting rent request renter");
     });
 };
 
