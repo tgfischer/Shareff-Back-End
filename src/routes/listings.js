@@ -28,6 +28,7 @@ router.post('/', (req, res) => {
                     "userTable"."lastName" AS "ownerLastName" \
                   FROM (("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId")\
                     INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId")';
+    let where = '';
 
     // If the user typed something into the search box
     if (q) {
@@ -36,7 +37,7 @@ router.post('/', (req, res) => {
       q = q.replace(/\s+/g, '|');
       params.push(q);
 
-      query += ` WHERE (("rentalItem"."title" ~* $${params.length} OR "rentalItem"."description" ~* $${params.length})`;
+      where += ` WHERE (("rentalItem"."title" ~* $${params.length} OR "rentalItem"."description" ~* $${params.length})`;
     }
 
     // If the user entered a location
@@ -46,7 +47,7 @@ router.post('/', (req, res) => {
       location = location.replace(/\s+/g, '|');
       params.push(location);
 
-      query += `${params.length > 1 ? ' AND' : ' WHERE ('} ("address"."line1" ~* $${params.length} OR \
+      where += `${params.length > 1 ? ' AND' : ' WHERE ('} ("address"."line1" ~* $${params.length} OR \
                   "address"."line2" ~* $${params.length} OR "address"."city" ~* $${params.length} OR \
                   "address"."postalCode" ~* $${params.length})`;
     }
@@ -58,12 +59,13 @@ router.post('/', (req, res) => {
       params.push(latitude);
       params.push(maxDistance * 1000); // Calculate the distance, convert from km to meters
 
-      query += `${params.length > 3 ? ' AND' : ' WHERE ('} ST_DWithin("address"."gps", \
+      where += `${params.length > 3 ? ' AND' : ' WHERE ('} ST_DWithin("address"."gps", \
         ST_SetSRID(ST_MakePoint($${params.length - 2}::double precision, $${params.length - 1}::double precision), 4326), $${params.length})`;
     }
 
     // Add the suffix to the query
-    query += `${params.length > 0 ? ') AND' : ' WHERE'} "rentalItem"."status" != \'Archived\' LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    where += `${params.length > 0 ? ') AND' : ' WHERE'} "rentalItem"."status" != \'Archived\'`;
+    query += `${where} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
 
     // Push the last two parameters to the query
     params.push(NUM_PER_PAGE);
@@ -73,10 +75,18 @@ router.post('/', (req, res) => {
     // substring limits the amount of characters that are returned
     client.query(query, params).then(({rows}) => {
       const listings = rows;
+      const query = `SELECT COUNT(*) AS "totalNumListings" \
+                      FROM (("rentalItem" INNER JOIN "address" ON "rentalItem"."addressId"="address"."addressId") \
+                        INNER JOIN "userTable" ON "rentalItem"."ownerId"="userTable"."userId") \
+                      ${where}`;
+
+      // Remove the num per page and offset from the params
+      params.pop();
+      params.pop();
 
       // Now query the database for the total number of listings that match the
       // query
-      client.query('SELECT COUNT(*) AS "totalNumListings" FROM "rentalItem" WHERE ("rentalItem"."title" ~* $1 OR "rentalItem"."description" ~* $1) AND "rentalItem"."status" != \'Archived\'', [q]).then(({rows}) => {
+      client.query(query, params).then(({rows}) => {
         client.release();
 
         // Return the result to the client

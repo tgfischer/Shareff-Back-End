@@ -34,9 +34,9 @@ export const nls = {
   BMS_END_CONF_SENT: 'End Confirmation Sent',
 
   /* Booking Statuses */
-  BOOKING_PENDING: 'Booking Pending',
-  BOOKING_ACTIVE: 'Booking Active',
-  BOOKING_COMPLETE: 'Booking Complete',
+  BOOKING_PENDING: 'Pending',
+  BOOKING_ACTIVE: 'Active',
+  BOOKING_COMPLETE: 'Complete',
   BOOKING_UNAVAILABLE: 'Unavailable',
 
   /* Email Notification Subject Lines */
