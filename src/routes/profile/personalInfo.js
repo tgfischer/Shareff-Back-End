@@ -65,11 +65,11 @@ router.post('/get_personal_info', isLoggedIn, (req, res) => {
           }
 
           query = `UPDATE "address" \
-                    SET "line1"=$1, "line2"=$2, "city"=$3, "province"=$4, "postalCode"=$5, "latitude"=$6, "longitude"=$7 \
+                    SET "line1"=$1, "line2"=$2, "city"=$3, "province"=$4, "postalCode"=$5, "longitude"=$7, "latitude"=$6, "gps"=ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography \
                     WHERE "addressId"=$8`;
 
           // Update the user's address
-          client.query(query, [addressOne, addressTwo, city, province, postalCode, latitude, longitude, addressId]).then(result => {
+          client.query(query, [addressOne, addressTwo, city, province, postalCode, longitude, latitude, addressId]).then(result => {
             // Finish the transaction
             client.query('COMMIT').then(result => {
               // Get the user. The client gets released
