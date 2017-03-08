@@ -271,8 +271,8 @@ const createBooking = (rentRequest) => {
         const {itemId, requestId, renterId, startDate, endDate} = rentRequest;
         const price = parseInt(result.rows[0].price);
         const totalCost = calculatePrice(startDate, endDate, price);
-        const createBookingQuery = `INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", "status", "metaStatus", "totalCost") VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`;
-        const params = [itemId, requestId, renterId, startDate, endDate, nls.BOOKING_PENDING, nls.BMS_PENDING_START, totalCost];
+        const createBookingQuery = `INSERT INTO public."booking" ("itemId", "rentRequestId", "userId", "startDate", "endDate", "status", "metaStatus", "totalCost", "ownerStartConfirm", "renterStartConfirm", "ownerEndConfirm", "renterEndConfirm") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`;
+        const params = [itemId, requestId, renterId, startDate, endDate, nls.BOOKING_PENDING, nls.BMS_PENDING_START, totalCost, null, null, null, null];
         client.query(createBookingQuery, params).then(result => {
             client.release();
             console.log("Created a booking successfully!");
