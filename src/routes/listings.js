@@ -56,7 +56,14 @@ router.post('/', (req, res) => {
                   "address"."postalCode" ~* $${params.length})`;
     }
 
-    // 2000 is our upper limit, so if they set it to 2000 then don't filter out
+    // If the user wants to filter by price
+    if (maxPrice && maxPrice < 2000) {
+      params.push(maxPrice);
+
+      where += `${params.length > 1 ? ' AND' : ' WHERE ('} ("rentalItem"."price" <= $${params.length})`;
+    }
+
+    // 100 is our upper limit, so if they set it to 2000 then don't filter out
     // items by max distance
     if (maxDistance && maxDistance < 100 && longitude && latitude) {
       params.push(longitude);
@@ -93,7 +100,7 @@ router.post('/', (req, res) => {
       client.query(query, params).then(({rows}) => {
         client.release();
 
-        // If there is a provided start and end date, we need to filter the listings for what is not booked        
+        // If there is a provided start and end date, we need to filter the listings for what is not booked
         if (startDate && endDate) {
           filterAvailableListings(listings, startDate, endDate).then(listings => {
             res.status(200).json({
@@ -182,7 +189,7 @@ const filterAvailableListings = (listings, startDate, endDate) => {
     const requestEndDate = moment(new Date(endDate), nls.MOMENT_DATE_FORMAT);
     const requestRange = moment.range(requestStartDate, requestEndDate);
     const sizeOfListings = listings.length;
-    let count = 0; 
+    let count = 0;
     let newListings = [];
 
     if (sizeOfListings > 0) {
@@ -192,7 +199,7 @@ const filterAvailableListings = (listings, startDate, endDate) => {
         pool.connect().then(client => {
           client.query(`SELECT * FROM "booking" WHERE "itemId"=$1;`, [listing.itemId]).then(result => {
             const bookings = result.rows;
-            
+
             isListingAvailable(requestRange, bookings).then(isAvailable => {
               if (isAvailable) {
                 newListings.push(listing);
@@ -220,7 +227,7 @@ const filterAvailableListings = (listings, startDate, endDate) => {
 const isListingAvailable = (requestRange, bookings) => {
   return new Promise((resolve, reject) => {
     const sizeOfBookings = bookings.length;
-    let count = 0; 
+    let count = 0;
     if (sizeOfBookings > 0) {
       for (const booking of bookings) {
         count++;
@@ -230,7 +237,7 @@ const isListingAvailable = (requestRange, bookings) => {
 
         if (bookedRange.overlaps(requestRange, {adjacent: true}) || requestRange.overlaps(bookedRange, {adjacent:true})) { // true)
           return resolve(false);
-        } 
+        }
         if (count === sizeOfBookings) {
           return resolve(true);
         }
